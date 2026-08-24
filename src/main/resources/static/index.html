@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📚 图书管理系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            animation: fadeInDown 0.8s ease;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            animation: fadeInUp 0.6s ease;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            color: #5a67d8;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+
+        input[type="text"], input[type="password"] {
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            width: 260px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            outline: none;
+            background: #f8fafc;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        input[type="text"]:focus, input[type="password"]:focus {
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-1px);
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        button:active { transform: scale(0.95); }
+
+        .btn-add {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+            box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);
+        }
+        .btn-add:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(72, 187, 120, 0.4);
+        }
+
+        .btn-search {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .btn-search:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-refresh {
+            background: #edf2f7;
+            color: #4a5568;
+            border: 1px solid #e2e8f0;
+        }
+        .btn-refresh:hover {
+            background: #e2e8f0;
+            transform: translateY(-1px);
+        }
+
+        .btn-edit {
+            background: linear-gradient(135deg, #4299e1, #3182ce);
+            color: white;
+            padding: 6px 14px;
+            font-size: 13px;
+        }
+        .btn-edit:hover { transform: scale(1.05); }
+
+        .btn-del {
+            background: linear-gradient(135deg, #f56565, #e53e3e);
+            color: white;
+            padding: 6px 14px;
+            font-size: 13px;
+        }
+        .btn-del:hover { transform: scale(1.05); }
+
+        #msg {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            transform: translateX(400px);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #msg.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .success {
+            background: linear-gradient(135deg, #c6f6d5, #9ae6b4);
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+
+        .error {
+            background: linear-gradient(135deg, #fed7d7, #fc8181);
+            color: #742a2a;
+            border: 1px solid #fc8181;
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            color: #718096;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e2e8f0;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 12px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 50px;
+            color: #a0aec0;
+        }
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 0 8px;
+        }
+
+        .pagination button {
+            min-width: 40px;
+            height: 40px;
+            padding: 0 12px;
+            border-radius: 10px;
+            background: white;
+            color: #4a5568;
+            border: 1px solid #e2e8f0;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .pagination button:hover:not(:disabled):not(.active) {
+            background: #edf2f7;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .pagination button.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            transform: scale(1.1);
+        }
+
+        .pagination button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .page-info {
+            text-align: center;
+            color: #718096;
+            font-size: 13px;
+            font-weight: 500;
+            padding-bottom: 12px;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .search-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        /* 登录面板 */
+        .auth-box {
+            max-width: 420px;
+            margin: 0 auto;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 10px;
+            background: #edf2f7;
+            color: #4a5568;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            margin-bottom: 0;
+        }
+
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .header-bar h1 {
+            margin: 0;
+            text-align: left;
+            font-size: 2rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+            font-weight: 600;
+            background: rgba(255,255,255,0.15);
+            padding: 8px 16px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        /* 书籍卡片样式 */
+        .book-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 24px;
+            padding: 10px 0;
+        }
+
+        .book-card {
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .book-card:hover {
+            transform: translateY(-8px);
+        }
+
+        .book-cover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px 12px 12px 4px;
+            padding: 20px 16px;
+            height: 260px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .book-spine {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 12px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 4px 0 0 4px;
+        }
+
+        .book-order {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 14px;
+        }
+
+        .book-name {
+            color: white;
+            font-size: 20px;
+            font-weight: 700;
+            line-height: 1.4;
+            margin-top: 20px;
+            word-break: break-all;
+        }
+
+        .book-id {
+            color: rgba(255,255,255,0.8);
+            font-size: 12px;
+        }
+
+        .book-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            justify-content: center;
+        }
+
+        .add-placeholder {
+            border: 2px dashed #cbd5e0;
+            border-radius: 4px 12px 12px 4px;
+            height: 260px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #a0aec0;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .add-placeholder:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 1.8rem; }
+            input[type="text"], input[type="password"] { width: 100%; margin-bottom: 10px; }
+            .search-row { flex-direction: column; align-items: stretch; }
+            .glass-card { padding: 16px; }
+            .header-bar h1 { font-size: 1.5rem; }
+            .book-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ========== 登录/注册面板 ========== -->
+<div id="authPanel" class="container">
+    <h1>📚 图书管理系统</h1>
+    <div class="glass-card auth-box">
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('login')">🔑 登录</button>
+            <button class="tab-btn" onclick="switchTab('register')">📝 注册</button>
+        </div>
+
+        <div id="loginForm">
+            <div class="form-group">
+                <input type="text" id="loginUsername" placeholder="用户名" onkeypress="if(event.key==='Enter')doLogin()">
+            </div>
+            <div class="form-group">
+                <input type="password" id="loginPassword" placeholder="密码" onkeypress="if(event.key==='Enter')doLogin()">
+            </div>
+            <button class="btn-add" style="width:100%; justify-content:center;" onclick="doLogin()">🔓 登录</button>
+        </div>
+
+        <div id="registerForm" style="display:none;">
+            <div class="form-group">
+                <input type="text" id="regUsername" placeholder="用户名 (3-20位)" onkeypress="if(event.key==='Enter')doRegister()">
+            </div>
+            <div class="form-group">
+                <input type="password" id="regPassword" placeholder="密码 (至少6位)" onkeypress="if(event.key==='Enter')doRegister()">
+            </div>
+            <button class="btn-add" style="width:100%; justify-content:center;" onclick="doRegister()">✅ 注册</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========== 图书管理面板 ========== -->
+<div id="appPanel" class="container" style="display:none;">
+    <div class="header-bar">
+        <h1>📚 书城 </h1>
+        <div class="user-info">
+            <span id="currentUserName">👤 用户</span>
+            <span id="currentUserRole" style="font-size:12px; opacity:0.8;"></span>
+            <button class="btn-refresh" onclick="doLogout()">🚪 退出</button>
+        </div>
+    </div>
+
+    <div class="glass-card" id="addBookCard">
+        <div class="card-title">✨ 添加新书</div>
+        <div class="search-row">
+            <input type="text" id="bookName" placeholder="输入书名，回车快速添加" onkeypress="if(event.key==='Enter')addBook()">
+            <button class="btn-add" onclick="addBook()">➕ 添加</button>
+        </div>
+    </div>
+
+    <div class="glass-card">
+        <div class="card-title">🔍 查找图书</div>
+        <div class="search-row">
+            <input type="text" id="searchKeyword" placeholder="输入书名关键词，回车搜索" onkeypress="if(event.key==='Enter')searchBook()">
+            <button class="btn-search" onclick="searchBook()">🔍 搜索</button>
+            <button class="btn-refresh" onclick="loadBooks()">📋 显示全部</button>
+        </div>
+    </div>
+
+    <div class="glass-card">
+        <div class="card-title">📖 图书列表</div>
+        <div id="bookList" class="book-grid">
+            <div class="empty-state" style="grid-column: 1 / -1;">
+                <div class="empty-state-icon">📭</div>
+                <div>点击"显示全部"加载数据</div>
+            </div>
+        </div>
+        <div class="pagination" id="pagination"></div>
+        <div class="page-info" id="pageInfo"></div>
+    </div>
+</div>
+
+<div id="msg"></div>
+
+<script>
+    const API_BASE = '';
+    let token = localStorage.getItem('token') || '';
+    let currentUser = null;
+    try {
+        currentUser = JSON.parse(localStorage.getItem('userInfo') || 'null');
+    } catch(e) { currentUser = null; }
+
+    if (token && currentUser) {
+        showApp();
+    } else {
+        showAuth();
+    }
+
+    // ========== API 请求封装（自动带 Token） ==========
+    async function api(url, options = {}) {
+        options.headers = options.headers || {};
+        if (token) {
+            options.headers['Authorization'] = 'Bearer ' + token;
+        }
+        if (options.body && typeof options.body === 'object') {
+            options.headers['Content-Type'] = 'application/json';
+            options.body = JSON.stringify(options.body);
+        }
+        const res = await fetch(API_BASE + url, options);
+        const data = await res.json();
+        if (data.code === 401) {
+            showMsg('登录已过期，请重新登录', true);
+            logout();
+            throw data;
+        }
+        return data;
+    }
+
+    function isAdmin() {
+        return currentUser && currentUser.role === 'ADMIN';
+    }
+
+    // ========== 登录/注册/退出 ==========
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+        if (tab === 'login') {
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('registerForm').style.display = 'none';
+        } else {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'block';
+        }
+    }
+
+    async function doLogin() {
+        const username = document.getElementById('loginUsername').value.trim();
+        const password = document.getElementById('loginPassword').value.trim();
+        if (!username || !password) {
+            showMsg('请填写用户名和密码', true);
+            return;
+        }
+        try {
+            const data = await api('/users/login', {
+                method: 'POST',
+                body: { username, password }
+            });
+            if (data.code === 200) {
+                token = data.data.token;
+                currentUser = data.data.userInfo;
+                localStorage.setItem('token', token);
+                localStorage.setItem('userInfo', JSON.stringify(currentUser));
+                showMsg('🎉 登录成功', false);
+                showApp();
+            } else {
+                showMsg(data.msg || '登录失败', true);
+            }
+        } catch (e) {
+            if (e.msg) showMsg(e.msg, true);
+        }
+    }
+
+    async function doRegister() {
+        const username = document.getElementById('regUsername').value.trim();
+        const password = document.getElementById('regPassword').value.trim();
+        if (!username || !password) {
+            showMsg('请填写完整信息', true);
+            return;
+        }
+        if (username.length < 3 || username.length > 20) {
+            showMsg('用户名长度需在 3-20 位之间', true);
+            return;
+        }
+        if (password.length < 6) {
+            showMsg('密码至少 6 位', true);
+            return;
+        }
+        try {
+            const data = await api('/users/register', {
+                method: 'POST',
+                body: { username, password }
+            });
+            if (data.code === 200) {
+                showMsg('✅ 注册成功，请登录', false);
+                switchTab('login');
+                document.getElementById('loginUsername').value = username;
+            } else {
+                showMsg(data.msg || '注册失败', true);
+            }
+        } catch (e) {
+            if (e.msg) showMsg(e.msg, true);
+        }
+    }
+
+   async function doLogout() {
+    try {
+        await fetch(API_BASE + '/users/logout', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            }
+        });
+    } catch (err) {
+        console.log('登出请求失败:', err);
+    } finally {
+        token = '';
+        currentUser = null;
+        localStorage.removeItem('token');
+        localStorage.removeItem('userInfo');
+        showAuth();
+        showMsg('已退出登录', false);
+    }
+}
+
+    function showAuth() {
+        document.getElementById('authPanel').style.display = 'block';
+        document.getElementById('appPanel').style.display = 'none';
+    }
+
+    function showApp() {
+        document.getElementById('authPanel').style.display = 'none';
+        document.getElementById('appPanel').style.display = 'block';
+        if (currentUser) {
+            document.getElementById('currentUserName').textContent = '👤 ' + (currentUser.username || '用户');
+            document.getElementById('currentUserRole').textContent = isAdmin() ? '【管理员】' : '【普通用户】';
+        }
+
+        const admin = isAdmin();
+        const addCard = document.getElementById('addBookCard');
+        if (addCard) addCard.style.display = admin ? 'block' : 'none';
+
+        loadBooks();
+    }
+
+    // ========== 图书管理功能 ==========
+    let allBooks = [];
+    let currentPage = 1;
+    let totalPages = 1;
+    let totalElements = 0;
+    const PAGE_SIZE = 8;
+    let isSearchMode = false;
+
+    function showMsg(text, isError) {
+        const msg = document.getElementById('msg');
+        msg.textContent = (isError ? '❌ ' : '✅ ') + text;
+        msg.className = isError ? 'error' : 'success';
+        msg.classList.add('show');
+        if (msg._timer) clearTimeout(msg._timer);
+        msg._timer = setTimeout(() => {
+            msg.classList.remove('show');
+        }, 3000);
+    }
+
+    function renderPage() {
+        let pageBooks;
+        let displayTotalPages;
+
+        if (isSearchMode) {
+            displayTotalPages = Math.ceil(allBooks.length / PAGE_SIZE);
+            if (currentPage > displayTotalPages) currentPage = Math.max(1, displayTotalPages);
+            const start = (currentPage - 1) * PAGE_SIZE;
+            const end = start + PAGE_SIZE;
+            pageBooks = allBooks.slice(start, end);
+            document.getElementById('pageInfo').textContent =
+                allBooks.length > 0 ? `📊 共 ${allBooks.length} 本图书 | 第 ${currentPage}/${Math.max(1, displayTotalPages)} 页` : '';
+        } else {
+            displayTotalPages = totalPages;
+            if (currentPage > displayTotalPages) currentPage = Math.max(1, displayTotalPages);
+            pageBooks = allBooks;
+            document.getElementById('pageInfo').textContent =
+                totalElements > 0 ? `📊 共 ${totalElements} 本图书 | 第 ${currentPage}/${Math.max(1, displayTotalPages)} 页` : '';
+        }
+
+        renderBooks(pageBooks);
+        renderPagination(displayTotalPages);
+    }
+
+    function renderBooks(books) {
+        const container = document.getElementById('bookList');
+        const admin = isAdmin();
+
+        if (books.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <div class="empty-state-icon">📭</div>
+                    <div>暂无图书</div>
+                </div>`;
+            return;
+        }
+
+        let html = books.map((book, index) => `
+            <div class="book-card">
+                <div class="book-cover">
+                    <div class="book-spine"></div>
+                    <div class="book-order">${book.displayOrder}</div>
+                    <div class="book-name">${escapeHtml(book.name)}</div>
+                    <div class="book-id">ID: #${book.id}</div>
+                </div>
+                ${admin ? `
+                <div class="book-actions">
+                    <button class="btn-edit" onclick="editBook(${book.id}, '${escapeJs(book.name)}')">✏️ 修改</button>
+                    <button class="btn-del" onclick="deleteBook(${book.id})">🗑️ 删除</button>
+                </div>` : ''}
+            </div>
+        `).join('');
+
+        if (admin) {
+            html += `
+            <div class="book-card" onclick="document.getElementById('bookName').focus()">
+                <div class="add-placeholder">
+                    <div style="text-align:center;">
+                        <div style="font-size:2rem; margin-bottom:8px;">➕</div>
+                        <div>添加新书</div>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        container.innerHTML = html;
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    function escapeJs(str) {
+        return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+    }
+
+    function renderPagination(totalPages) {
+        const container = document.getElementById('pagination');
+        if (totalPages <= 1) {
+            container.innerHTML = '';
+            return;
+        }
+
+        let html = '';
+        html += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>◀</button>`;
+
+        const delta = 2;
+        const range = [];
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
+                range.push(i);
+            }
+        }
+
+        let l;
+        for (let i of range) {
+            if (l) {
+                if (i - l === 2) {
+                    html += `<button onclick="changePage(${l + 1})">${l + 1}</button>`;
+                } else if (i - l !== 1) {
+                    html += `<button disabled style="cursor:default;background:none;border:none;box-shadow:none;">...</button>`;
+                }
+            }
+            html += `<button onclick="changePage(${i})" class="${i === currentPage ? 'active' : ''}">${i}</button>`;
+            l = i;
+        }
+
+        html += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>▶</button>`;
+        container.innerHTML = html;
+    }
+
+    function changePage(page) {
+        currentPage = page;
+        if (isSearchMode) {
+            renderPage();
+        } else {
+            loadBooks();
+        }
+    }
+
+    async function loadBooks() {
+        isSearchMode = false;
+        document.getElementById('bookList').innerHTML = `
+            <div class="loading" style="grid-column: 1 / -1;">
+                <div class="spinner"></div>
+                <div>正在加载...</div>
+            </div>`;
+        try {
+            const res = await api(`/books?page=${currentPage}&size=${PAGE_SIZE}`);
+            if (res.code === 200) {
+                allBooks = res.data.content;
+                totalPages = res.data.totalPages;
+                totalElements = res.data.totalElements;
+                renderPage();
+            } else {
+                showMsg(res.msg, true);
+            }
+        } catch (err) {
+            if (err.msg) showMsg(err.msg, true);
+        }
+    }
+
+    async function searchBook() {
+        const keyword = document.getElementById('searchKeyword').value.trim();
+        if (!keyword) {
+            showMsg('请输入书名', true);
+            return;
+        }
+
+        document.getElementById('bookList').innerHTML = `
+            <div class="loading" style="grid-column: 1 / -1;">
+                <div class="spinner"></div>
+                <div>正在搜索...</div>
+            </div>`;
+
+        try {
+            const res = await api(`/books/search?keyword=${encodeURIComponent(keyword)}`);
+            if (res.code !== 200) {
+                showMsg(res.msg, true);
+                return;
+            }
+            isSearchMode = true;
+            allBooks = res.data;
+            currentPage = 1;
+            renderPage();
+            showMsg(`找到 ${res.data.length} 本相关图书`, false);
+        } catch (err) {
+            if (err.msg) showMsg(err.msg, true);
+        }
+    }
+
+    async function addBook() {
+        const name = document.getElementById('bookName').value.trim();
+        if (!name) {
+            showMsg('请输入书名！', true);
+            return;
+        }
+        try {
+            const res = await api('/books', {
+                method: 'POST',
+                body: { name: name }
+            });
+            if (res.code === 200) {
+                showMsg('添加成功', false);
+                document.getElementById('bookName').value = '';
+                loadBooks();
+            } else {
+                showMsg(res.msg, true);
+            }
+        } catch (err) {
+            if (err.msg) showMsg(err.msg, true);
+        }
+    }
+
+    async function editBook(id, oldName) {
+        const newName = prompt('请输入新书名：', oldName);
+        if (newName === null || newName.trim() === '') {
+            showMsg('书名不能为空', true);
+            return;
+        }
+        try {
+            const res = await api(`/books/${id}`, {
+                method: 'PUT',
+                body: { name: newName.trim() }
+            });
+            if (res.code === 200) {
+                showMsg('修改成功', false);
+                loadBooks();
+            } else {
+                showMsg(res.msg, true);
+            }
+        } catch (err) {
+            if (err.msg) showMsg(err.msg, true);
+        }
+    }
+
+    async function deleteBook(id) {
+        if (!confirm('确定要删除这本书吗？')) return;
+        try {
+            const res = await api(`/books/${id}`, { method: 'DELETE' });
+            if (res.code === 200) {
+                showMsg('删除成功', false);
+                loadBooks();
+            } else {
+                showMsg(res.msg, true);
+            }
+        } catch (err) {
+            if (err.msg) showMsg(err.msg, true);
+        }
+    }
+</script>
+
+</body>
+</html>
