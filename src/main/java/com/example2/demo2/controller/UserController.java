@@ -1,7 +1,9 @@
 package com.example2.demo2.controller;
 
+import com.example2.demo2.common.RateLimit;
 import com.example2.demo2.common.Result;
 import com.example2.demo2.common.UserContext;
+import com.example2.demo2.common.exception.RateLimitException;
 import com.example2.demo2.dto.LoginDTO;
 import com.example2.demo2.dto.UserRegisterDTO;
 import com.example2.demo2.entity.User;
@@ -39,16 +41,18 @@ public class UserController {
     private final StringRedisTemplate stringRedisTemplate;
 
     @Operation(summary = "用户注册")
+    @RateLimit(key = "register", limit = 5, window = 60)
     @PostMapping("/register")
     public Result<User> register(@RequestBody @Valid UserRegisterDTO dto){
         return Result.success(userService.register(dto));
     }
 
     @Operation(summary = "用户登陆")
+    @RateLimit(key = "login", limit = 5, window = 60)
     @PostMapping("/login")
-    public Result<LoginVO> login(@RequestBody @Valid LoginDTO dto){
+    public Result<LoginVO> login(@RequestBody LoginDTO loginDTO, HttpServletRequest request) {
 
-        return Result.success(userService.login(dto));
+        return Result.success(userService.login(loginDTO));
     }
 
     @Operation(
