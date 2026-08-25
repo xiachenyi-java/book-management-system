@@ -1,6 +1,7 @@
 package com.example2.demo2.vo;
 
 import com.example2.demo2.entity.User;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 /**
@@ -10,6 +11,8 @@ import lombok.Data;
 @Data
 public class LoginVO {
     private String token;//jwt令牌
+
+    private String refreshToken;//双令牌
 
     private User userInfo;//用户信息
 }

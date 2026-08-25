@@ -35,7 +35,8 @@ public class WebConfig implements WebMvcConfigurer {
                         "/",                    // 加这行：根路径
                         "/index.html",          // 加这行：首页
                         "/*.html",              // 加这行：所有静态页面
-                        "/favicon.ico"          // 加这行：图标
+                        "/favicon.ico",          // 加这行：图标
+                        "/users/refresh"
                 );
     }
 }

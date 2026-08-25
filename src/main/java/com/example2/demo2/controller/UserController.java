@@ -5,6 +5,7 @@ import com.example2.demo2.common.Result;
 import com.example2.demo2.common.UserContext;
 import com.example2.demo2.common.exception.RateLimitException;
 import com.example2.demo2.dto.LoginDTO;
+import com.example2.demo2.dto.RefreshTokenDTO;
 import com.example2.demo2.dto.UserRegisterDTO;
 import com.example2.demo2.entity.User;
 import com.example2.demo2.service.UserService;
@@ -69,5 +70,11 @@ public class UserController {
         String key = "blacklist:token:" +token;
         stringRedisTemplate.opsForValue().set(key,"logout",120, TimeUnit.MINUTES);
         return Result.success();
+    }
+
+    @Operation(summary = "刷新令牌")
+    @PostMapping("/refresh")
+    public Result<LoginVO> refresh(@RequestBody @Valid RefreshTokenDTO dto){
+        return Result.success(userService.refresh(dto.getRefreshToken()));
     }
 }

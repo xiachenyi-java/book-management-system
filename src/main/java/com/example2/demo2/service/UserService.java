@@ -15,6 +15,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -69,12 +71,22 @@ public class UserService {
         }
         //生成token
         String token = jwtUtil.generateToken(user.getId(), user.getUsername(),user.getRole());
+        //双令牌
+        String refreshToken = UUID.randomUUID().toString();
+        //
+        stringRedisTemplate.opsForValue().set(
+                "refresh:" + user.getId(),
+                refreshToken,
+                7, TimeUnit.DAYS
+        );
         //清除敏感信息
         user.setPasswordHash(null);
         // 创建 LoginVO，塞入 token 和 userInfo
         LoginVO loginVO = new LoginVO();
         loginVO.setToken(token);
+        loginVO.setRefreshToken(refreshToken);
         loginVO.setUserInfo(user);
+
 
         String userJson = objectMapper.writeValueAsString(user);
         return loginVO;
@@ -110,4 +122,45 @@ public class UserService {
         return dbUser;
     }
 
+    public LoginVO refresh(String refreshToken) {
+        // ========== 1. 去 Redis 反查这个 refreshToken 属于哪个用户 ==========
+        // 扫描所有 refresh:* 的 key，找到匹配的 token
+        // 生产环境建议用 Hash 结构：HGET refresh_tokens refreshToken
+        String userIdStr = null;
+        Set<String> keys = stringRedisTemplate.keys("refresh:*");
+        if (keys != null) {
+            for (String key : keys) {
+                String storedToken = stringRedisTemplate.opsForValue().get(key);
+                if (refreshToken.equals(storedToken)) {
+                    userIdStr = key.replace("refresh:", "");
+                    break;
+                }
+            }
+        }
+
+        if (userIdStr == null) {
+            throw new RuntimeException("刷新令牌已过期或不存在");
+        }
+
+        Integer userId = Integer.valueOf(userIdStr);
+
+        // ========== 2. 生成新的 Access Token ==========
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+
+        String newAccessToken = jwtUtil.generateToken(
+                user.getId(),
+                user.getUsername(),
+                user.getRole()
+        );
+
+        // ========== 3. 组装返回 ==========
+        LoginVO vo = new LoginVO();
+        vo.setToken(newAccessToken);
+        vo.setRefreshToken(refreshToken);   // 继续用原来的
+        user.setPasswordHash(null);
+        vo.setUserInfo(user);
+
+        return vo;
+    }
 }
