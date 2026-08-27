@@ -31,7 +31,7 @@ public class GlobalExceptionHandler {
         return Result.error(msg);
     }
 
-    //
+    //自定义异常
     @ExceptionHandler(RateLimitException.class)
     @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)  // 这个注解会让 HTTP 状态码变成 429
     public Result<Void> handleRateLimit(RateLimitException e) {

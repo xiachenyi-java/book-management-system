@@ -1,10 +1,15 @@
-package com.example2.demo2.service;
+package com.study.backend.sourcecode;
 
-import com.example2.demo2.entity.Book;
+/**
+ * 夏辰义
+ * 2026/8/2618:01
+ */
+public class 之前的代码3 {
+}
+/*package com.example2.demo2.service;
+
 import com.example2.demo2.entity.User;
-import com.example2.demo2.repository.BookRepository;
-import com.example2.demo2.repository.UserRepository;
-import com.example2.demo2.vo.BookPageVO;
+
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +17,6 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,6 +25,7 @@ import java.util.List;
  * 夏辰义
  * 2026/8/1020:50
  */
+/*
 @Slf4j
 //@Slf4j 会自动给这个类生成一个 log 对象，你直接用 log.info(...) 就行
 @Service
@@ -110,3 +115,6 @@ public class BookService {
     }
 
 }
+ */
+
+

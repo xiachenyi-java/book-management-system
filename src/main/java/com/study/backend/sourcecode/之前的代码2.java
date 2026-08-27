@@ -1,6 +1,18 @@
+package com.study.backend.sourcecode;
+
+import lombok.Data;
+
+import java.util.List;
+
+/**
+ * 夏辰义
+ * 2026/8/2617:55
+ */
+public class 之前的代码2 {
+}
+/*
 package com.example2.demo2.vo;
 
-import com.example2.demo2.entity.Book;
 import lombok.Data;
 
 import java.util.List;
@@ -9,7 +21,7 @@ import java.util.List;
 /**
  * 夏辰义
  * 2026/8/2415:05
- */
+
 @Data
 public class BookPageVO {
     private List<Book> list;        // 当前页数据
@@ -28,3 +40,5 @@ public class BookPageVO {
         return vo;
     }
 }
+
+ */

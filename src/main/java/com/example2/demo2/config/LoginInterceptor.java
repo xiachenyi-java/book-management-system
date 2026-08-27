@@ -1,7 +1,7 @@
 package com.example2.demo2.config;
 
 import com.example2.demo2.common.JwtUtil;
-import com.example2.demo2.common.RequireAdmin;
+import com.example2.demo2.common.annotation.RequireAdmin;
 import com.example2.demo2.common.UserContext;
 import com.example2.demo2.dto.UserContextDTO;
 import io.jsonwebtoken.Claims;
@@ -50,6 +50,7 @@ public class LoginInterceptor implements HandlerInterceptor {
             writeUnauthorized(response);
             return false;
         }
+        //查黑名单
         String blacklistKey = "blacklist:token:" + token;
         Boolean isBlacklisted = stringRedisTemplate.hasKey(blacklistKey);
         if (Boolean.TRUE.equals(isBlacklisted)) {

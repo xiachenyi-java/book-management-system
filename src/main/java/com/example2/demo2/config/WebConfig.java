@@ -2,9 +2,10 @@ package com.example2.demo2.config;
 
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 
@@ -20,23 +21,33 @@ public class WebConfig implements WebMvcConfigurer {
 
     private final LoginInterceptor loginInterceptor;
 
+    // 关键：这行不能少，而且不能加 final（@Value 和 @RequiredArgsConstructor 混用时 final 会冲突）
+    @Value("${upload.path:${user.dir}/uploads}")
+    private String uploadPath;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(loginInterceptor)
-                .addPathPatterns("/**")                    // 拦截所有
-                .excludePathPatterns(                      // 排除以下（不用登录就能访问）
-                        "/users/login",                        // 登录接口
-                        "/users/register",                     // 注册接口
-                        "/swagger-ui/**",                      // Swagger 页面
-                        "/swagger-ui.html",                    // Swagger 首页（有些版本是这个）
-                        "/v3/api-docs/**",                     // Swagger API 数据
-                        "/error",                               // Spring 错误页
-                        "/",                    // 加这行：根路径
-                        "/index.html",          // 加这行：首页
-                        "/*.html",              // 加这行：所有静态页面
-                        "/favicon.ico",          // 加这行：图标
-                        "/users/refresh"
+                .addPathPatterns("/**")
+                .excludePathPatterns(
+                        "/users/login",
+                        "/users/register",
+                        "/swagger-ui/**",
+                        "/swagger-ui.html",
+                        "/v3/api-docs/**",
+                        "/error",
+                        "/",
+                        "/index.html",
+                        "/*.html",
+                        "/favicon.ico",
+                        "/users/refresh",
+                        "/uploads/**"          // 封面图允许匿名访问
                 );
+    }
+
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations("file:" + uploadPath + "/");
     }
 }

@@ -1,8 +1,27 @@
+package com.study.backend.sourcecode;
+
+import com.example2.demo2.common.Result;
+import com.example2.demo2.common.annotation.RequireAdmin;
+import com.example2.demo2.entity.User;
+import com.example2.demo2.service.UserService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * 夏辰义
+ * 2026/8/2617:53
+ */
+public class 之前的代码 {
+}
+/*
 package com.example2.demo2.controller;
 
-import com.example2.demo2.common.RequireAdmin;
-import com.example2.demo2.dto.BookDTO;
-import com.example2.demo2.entity.Book;
+import com.example2.demo2.common.annotation.RequireAdmin;
 import com.example2.demo2.entity.User;
 import com.example2.demo2.service.BookService;
 import com.example2.demo2.common.Result;
@@ -13,7 +32,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,10 +40,8 @@ import java.util.List;
 @SecurityRequirement(name = "BearerAuth")
 @Tag(name = "图书管理")
 @RestController
-/*
 组合注解，相当于 @Controller + @ResponseBody。
 表示这个类的所有方法返回的数据直接写入 HTTP 响应体（返回 JSON，而不是跳转页面）。
- */
 @RequestMapping("/books")
 //给这个控制器设置一个基础路径。下面所有接口的 URL 前面都要加上 /books。
 @RequiredArgsConstructor
@@ -48,7 +64,7 @@ public class BookController {
     @Operation(summary = "找一本书")
     @GetMapping("/{id}")
     public Result<Book> getOne(@PathVariable Integer id) {
-      return Result.success(bookService.findById(id));
+        return Result.success(bookService.findById(id));
     }
 
     //模糊查询
@@ -63,8 +79,8 @@ public class BookController {
     @Operation(summary = "添加图书")
     @PostMapping
     public Result<Book> add(@RequestBody @Valid BookDTO book) {
-     Book saved = bookService.add(book.getName());
-     return Result.success(saved);
+        Book saved = bookService.add(book.getName());
+        return Result.success(saved);
     }
 
     // 修改书
@@ -91,3 +107,4 @@ public class BookController {
     }
 
 }
+ */

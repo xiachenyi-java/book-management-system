@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📚 图书管理系统</title>
+    <title>📖 小说书城</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -56,24 +56,30 @@
             font-weight: 600;
         }
 
-        input[type="text"], input[type="password"] {
+        input[type="text"], input[type="password"], textarea {
             padding: 12px 16px;
             border: 2px solid #e2e8f0;
             border-radius: 10px;
-            width: 260px;
+            width: 100%;
             font-size: 15px;
             transition: all 0.3s ease;
             outline: none;
             background: #f8fafc;
             margin-bottom: 10px;
             display: block;
+            font-family: inherit;
         }
 
-        input[type="text"]:focus, input[type="password"]:focus {
+        input[type="text"]:focus, input[type="password"]:focus, textarea:focus {
             border-color: #667eea;
             background: white;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
             transform: translateY(-1px);
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
         }
 
         button {
@@ -122,6 +128,11 @@
             background: #e2e8f0;
             transform: translateY(-1px);
         }
+        .btn-refresh:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
 
         .btn-edit {
             background: linear-gradient(135deg, #4299e1, #3182ce);
@@ -138,6 +149,19 @@
             font-size: 13px;
         }
         .btn-del:hover { transform: scale(1.05); }
+
+        .btn-back {
+            background: #edf2f7;
+            color: #4a5568;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-read {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 8px 16px;
+            font-size: 13px;
+        }
 
         #msg {
             position: fixed;
@@ -272,7 +296,6 @@
             align-items: center;
         }
 
-        /* 登录面板 */
         .auth-box {
             max-width: 420px;
             margin: 0 auto;
@@ -306,7 +329,7 @@
             margin-bottom: 14px;
         }
 
-        .form-group input {
+        .form-group input, .form-group textarea {
             width: 100%;
             margin-bottom: 0;
         }
@@ -338,109 +361,281 @@
             backdrop-filter: blur(10px);
         }
 
-        /* 书籍卡片样式 */
-        .book-grid {
+        .novel-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
             gap: 24px;
             padding: 10px 0;
         }
 
-        .book-card {
+        .novel-card {
             position: relative;
             cursor: pointer;
             transition: transform 0.3s ease;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
         }
 
-        .book-card:hover {
-            transform: translateY(-8px);
+        .novel-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.15);
         }
 
-        .book-cover {
+        .novel-cover {
+            height: 280px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 4px 12px 12px 4px;
-            padding: 20px 16px;
-            height: 260px;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+            justify-content: flex-end;
+            padding: 16px;
             position: relative;
-            overflow: hidden;
-        }
-
-        .book-spine {
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 12px;
-            background: rgba(255,255,255,0.15);
-            border-radius: 4px 0 0 4px;
-        }
-
-        .book-order {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            background: rgba(255,255,255,0.2);
             color: white;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            font-size: 14px;
         }
 
-        .book-name {
-            color: white;
-            font-size: 20px;
+        .novel-cover-img {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            object-fit: cover;
+            width: 100%;
+            height: 100%;
+        }
+
+        .novel-cover-overlay {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            padding: 40px 16px 16px;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+        }
+
+        .novel-status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.9);
+            color: #667eea;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
             font-weight: 700;
-            line-height: 1.4;
-            margin-top: 20px;
+        }
+
+        .novel-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
             word-break: break-all;
         }
 
-        .book-id {
-            color: rgba(255,255,255,0.8);
+        .novel-category {
             font-size: 12px;
+            opacity: 0.9;
+            margin-bottom: 4px;
         }
 
-        .book-actions {
+        .novel-meta {
             display: flex;
-            gap: 8px;
-            margin-top: 10px;
-            justify-content: center;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: white;
+            font-size: 13px;
+            color: #718096;
         }
 
-        .add-placeholder {
-            border: 2px dashed #cbd5e0;
-            border-radius: 4px 12px 12px 4px;
-            height: 260px;
+        .novel-words {
+            font-weight: 600;
+            color: #5a67d8;
+        }
+
+        .detail-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 24px;
+        }
+
+        .detail-cover {
+            width: 100%;
+            height: 400px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #a0aec0;
-            font-size: 14px;
+            color: white;
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .detail-info h2 {
+            font-size: 28px;
+            margin-bottom: 12px;
+            color: #2d3748;
+        }
+
+        .detail-tags {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            background: #edf2f7;
+            color: #4a5568;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .tag.primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .detail-summary {
+            color: #4a5568;
+            line-height: 1.8;
+            margin-bottom: 24px;
+            font-size: 15px;
+        }
+
+        .chapter-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .chapter-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid #e2e8f0;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
+            border-radius: 8px;
         }
 
-        .add-placeholder:hover {
-            border-color: #667eea;
-            color: #667eea;
+        .chapter-item:hover {
+            background: #f7fafc;
+            transform: translateX(4px);
         }
 
-        @media (max-width: 600px) {
+        .chapter-number {
+            color: #a0aec0;
+            font-size: 13px;
+            min-width: 50px;
+        }
+
+        .chapter-title {
+            flex: 1;
+            font-weight: 500;
+            color: #2d3748;
+        }
+
+        .chapter-wordcount {
+            color: #a0aec0;
+            font-size: 12px;
+        }
+
+        .read-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #faf8f5;
+            min-height: 100vh;
+            padding: 40px;
+            border-radius: 12px;
+        }
+
+        .read-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .read-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2d3748;
+        }
+
+        .read-nav {
+            display: flex;
+            gap: 10px;
+        }
+
+        .read-content {
+            font-size: 18px;
+            line-height: 2;
+            color: #2d3748;
+            text-indent: 2em;
+            white-space: pre-wrap;
+        }
+
+        .admin-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-box {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        .chapter-actions {
+            display: flex;
+            gap: 6px;
+            margin-left: 8px;
+        }
+
+        .read-finish {
+            text-align: center;
+            padding: 40px 20px;
+            color: #a0aec0;
+            font-size: 15px;
+            border-top: 1px dashed #e2e8f0;
+            margin-top: 40px;
+        }
+        .read-finish-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .detail-layout { grid-template-columns: 1fr; }
+            .detail-cover { height: 250px; }
+            .read-container { padding: 20px; }
             h1 { font-size: 1.8rem; }
-            input[type="text"], input[type="password"] { width: 100%; margin-bottom: 10px; }
-            .search-row { flex-direction: column; align-items: stretch; }
-            .glass-card { padding: 16px; }
-            .header-bar h1 { font-size: 1.5rem; }
-            .book-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
         }
     </style>
 </head>
@@ -448,7 +643,7 @@
 
 <!-- ========== 登录/注册面板 ========== -->
 <div id="authPanel" class="container">
-    <h1>📚 图书管理系统</h1>
+    <h1>📖 夏辰义的书城</h1>
     <div class="glass-card auth-box">
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('login')">🔑 登录</button>
@@ -477,10 +672,10 @@
     </div>
 </div>
 
-<!-- ========== 图书管理面板 ========== -->
-<div id="appPanel" class="container" style="display:none;">
+<!-- ========== 小说列表页 ========== -->
+<div id="listView" class="container" style="display:none;">
     <div class="header-bar">
-        <h1>📚 书城 </h1>
+        <h1>📖 小说书城</h1>
         <div class="user-info">
             <span id="currentUserName">👤 用户</span>
             <span id="currentUserRole" style="font-size:12px; opacity:0.8;"></span>
@@ -488,33 +683,157 @@
         </div>
     </div>
 
-    <div class="glass-card" id="addBookCard">
-        <div class="card-title">✨ 添加新书</div>
+    <div class="glass-card" id="adminPanel" style="display:none;">
+        <div class="card-title">✨ 管理员操作</div>
+        <button class="btn-add" onclick="showCreateNovelModal()">➕ 创建新小说</button>
+    </div>
+
+    <div class="glass-card">
+        <div class="card-title">🔍 查找小说</div>
         <div class="search-row">
-            <input type="text" id="bookName" placeholder="输入书名，回车快速添加" onkeypress="if(event.key==='Enter')addBook()">
-            <button class="btn-add" onclick="addBook()">➕ 添加</button>
+            <input type="text" id="searchKeyword" placeholder="输入书名关键词" style="flex:1;" onkeypress="if(event.key==='Enter')searchNovel()">
+            <button class="btn-search" onclick="searchNovel()">🔍 搜索</button>
+            <button class="btn-refresh" onclick="loadNovels()">📋 显示全部</button>
         </div>
     </div>
 
     <div class="glass-card">
-        <div class="card-title">🔍 查找图书</div>
-        <div class="search-row">
-            <input type="text" id="searchKeyword" placeholder="输入书名关键词，回车搜索" onkeypress="if(event.key==='Enter')searchBook()">
-            <button class="btn-search" onclick="searchBook()">🔍 搜索</button>
-            <button class="btn-refresh" onclick="loadBooks()">📋 显示全部</button>
-        </div>
-    </div>
-
-    <div class="glass-card">
-        <div class="card-title">📖 图书列表</div>
-        <div id="bookList" class="book-grid">
+        <div class="card-title">📚 热门小说</div>
+        <div id="novelList" class="novel-grid">
             <div class="empty-state" style="grid-column: 1 / -1;">
                 <div class="empty-state-icon">📭</div>
-                <div>点击"显示全部"加载数据</div>
+                <div>暂无小说</div>
             </div>
         </div>
         <div class="pagination" id="pagination"></div>
         <div class="page-info" id="pageInfo"></div>
+    </div>
+</div>
+
+<!-- ========== 小说详情页 ========== -->
+<div id="detailView" class="container" style="display:none;">
+    <div class="header-bar">
+        <button class="btn-back" onclick="showList()">← 返回书城</button>
+        <div class="user-info">
+            <span id="detailUserName">👤 用户</span>
+            <button class="btn-refresh" onclick="doLogout()">🚪 退出</button>
+        </div>
+    </div>
+
+    <div class="glass-card">
+        <div class="detail-layout">
+            <div>
+                <div class="detail-cover" id="detailCover">封面</div>
+                <div class="admin-actions" id="detailAdminActions" style="display:none;">
+                    <button class="btn-add" onclick="showAddChapterModal()" style="width:100%; justify-content:center;">➕ 发布新章节</button>
+                    <button class="btn-del" onclick="doDeleteNovel()" style="flex:1; justify-content:center;">🗑️ 删除小说</button>
+                </div>
+            </div>
+            <div class="detail-info">
+                <h2 id="detailTitle">书名</h2>
+                <div class="detail-tags">
+                    <span class="tag primary" id="detailCategory">分类</span>
+                    <span class="tag" id="detailStatus">状态</span>
+                    <span class="tag" id="detailWords">0 字</span>
+                </div>
+                <div class="detail-summary" id="detailSummary">简介...</div>
+
+                <div class="card-title">📑 章节目录</div>
+                <div class="chapter-list" id="chapterList">
+                    <div class="empty-state">暂无章节</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========== 阅读页 ========== -->
+<div id="readView" style="display:none;">
+    <div class="read-container">
+        <div class="read-header">
+            <button class="btn-back" onclick="backToDetail()">← 返回目录</button>
+            <div class="read-nav">
+                <button class="btn-refresh" id="prevChapterBtn" onclick="prevChapter()">上一章</button>
+                <button class="btn-refresh" id="nextChapterBtn" onclick="nextChapter()">下一章</button>
+            </div>
+        </div>
+        <h1 class="read-title" id="readTitle">章节标题</h1>
+        <div class="read-content" id="readContent">正文内容...</div>
+        <div id="readFinish" class="read-finish" style="display:none;">
+            <div class="read-finish-icon">🏁</div>
+            <div>本章已完结，感谢阅读！</div>
+            <button class="btn-back" onclick="backToDetail()" style="margin-top:12px;">返回目录</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========== 创建小说弹窗 ========== -->
+<div class="modal-overlay" id="createNovelModal">
+    <div class="modal-box">
+        <h3 style="margin-bottom:16px;">✨ 创建新小说</h3>
+        <div class="form-group">
+            <input type="text" id="novelTitle" placeholder="书名">
+        </div>
+        <div class="form-group">
+            <input type="text" id="novelCategory" placeholder="分类（如：玄幻、都市）">
+        </div>
+        <!-- 封面上传 -->
+        <div class="form-group">
+            <label style="display:block; margin-bottom:6px; color:#4a5568; font-size:14px; font-weight:600;">📷 封面图片</label>
+            <input type="hidden" id="novelCover" value="">
+            <div style="display:flex; gap:10px; align-items:center;">
+                <label style="cursor:pointer; padding:10px 20px; background:linear-gradient(135deg, #667eea, #764ba2); color:white; border-radius:10px; font-weight:600; font-size:14px; display:inline-flex; align-items:center; gap:6px;">
+                    📤 选择图片
+                    <input type="file" id="coverFile" accept="image/*" style="display:none;" onchange="uploadCover()">
+                </label>
+                <span id="coverFileName" style="color:#718096; font-size:13px;">未选择文件</span>
+            </div>
+            <div id="coverPreview" style="margin-top:12px; display:none;">
+                <img id="coverPreviewImg" style="max-width:200px; max-height:150px; border-radius:8px; border:2px solid #e2e8f0;">
+            </div>
+        </div>
+        <div class="form-group">
+            <textarea id="novelSummary" placeholder="简介"></textarea>
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+            <button class="btn-refresh" onclick="hideModal('createNovelModal')">取消</button>
+            <button class="btn-add" onclick="doCreateNovel()">创建</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========== 发布章节弹窗 ========== -->
+<div class="modal-overlay" id="addChapterModal">
+    <div class="modal-box">
+        <h3 style="margin-bottom:16px;">📝 发布章节</h3>
+        <div class="form-group">
+            <input type="text" id="chapterTitle" placeholder="章节标题">
+        </div>
+        <div class="form-group">
+            <textarea id="chapterContent" placeholder="正文内容（支持换行）"></textarea>
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+            <button class="btn-refresh" onclick="hideModal('addChapterModal')">取消</button>
+            <button class="btn-add" onclick="doAddChapter()">发布</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========== 修改章节弹窗 ========== -->
+<div class="modal-overlay" id="editChapterModal">
+    <div class="modal-box">
+        <h3 style="margin-bottom:16px;">✏️ 修改章节</h3>
+        <input type="hidden" id="editChapterId">
+        <div class="form-group">
+            <input type="text" id="editChapterTitle" placeholder="章节标题">
+        </div>
+        <div class="form-group">
+            <textarea id="editChapterContent" placeholder="正文内容（支持换行）"></textarea>
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+            <button class="btn-refresh" onclick="hideModal('editChapterModal')">取消</button>
+            <button class="btn-add" onclick="doUpdateChapter()">保存修改</button>
+        </div>
     </div>
 </div>
 
@@ -528,13 +847,23 @@
         currentUser = JSON.parse(localStorage.getItem('userInfo') || 'null');
     } catch(e) { currentUser = null; }
 
+    let currentNovelId = null;
+    let currentChapters = [];
+    let currentChapterIndex = 0;
+    let currentPage = 1;
+    let totalPages = 1;
+    let totalElements = 0;
+    const PAGE_SIZE = 8;
+    let isSearchMode = false;
+    let allNovels = [];
+
     if (token && currentUser) {
-        showApp();
+        showList();
     } else {
         showAuth();
     }
 
-    // ========== API 请求封装（自动带 Token） ==========
+    // ========== API 封装 ==========
     async function api(url, options = {}) {
         options.headers = options.headers || {};
         if (token) {
@@ -548,7 +877,7 @@
         const data = await res.json();
         if (data.code === 401) {
             showMsg('登录已过期，请重新登录', true);
-            logout();
+            doLogout();
             throw data;
         }
         return data;
@@ -558,14 +887,64 @@
         return currentUser && currentUser.role === 'ADMIN';
     }
 
+    // ========== 视图切换 ==========
+    function showAuth() {
+        document.getElementById('authPanel').style.display = 'block';
+        document.getElementById('listView').style.display = 'none';
+        document.getElementById('detailView').style.display = 'none';
+        document.getElementById('readView').style.display = 'none';
+    }
+
+    function showList() {
+        document.getElementById('authPanel').style.display = 'none';
+        document.getElementById('listView').style.display = 'block';
+        document.getElementById('detailView').style.display = 'none';
+        document.getElementById('readView').style.display = 'none';
+
+        if (currentUser) {
+            document.getElementById('currentUserName').textContent = '👤 ' + (currentUser.username || '用户');
+            document.getElementById('currentUserRole').textContent = isAdmin() ? '【管理员】' : '【读者】';
+            document.getElementById('detailUserName').textContent = '👤 ' + (currentUser.username || '用户');
+        }
+
+        document.getElementById('adminPanel').style.display = isAdmin() ? 'block' : 'none';
+        loadNovels();
+    }
+
+    function showDetail(novelId) {
+        currentNovelId = novelId;
+        document.getElementById('authPanel').style.display = 'none';
+        document.getElementById('listView').style.display = 'none';
+        document.getElementById('detailView').style.display = 'block';
+        document.getElementById('readView').style.display = 'none';
+
+        document.getElementById('detailAdminActions').style.display = isAdmin() ? 'block' : 'none';
+        loadNovelDetail(novelId);
+    }
+
+    function showRead(novelId, chapterId) {
+        document.getElementById('authPanel').style.display = 'none';
+        document.getElementById('listView').style.display = 'none';
+        document.getElementById('detailView').style.display = 'none';
+        document.getElementById('readView').style.display = 'block';
+
+        loadChapter(novelId, chapterId);
+    }
+
+    function backToDetail() {
+        showDetail(currentNovelId);
+    }
+
     // ========== 登录/注册/退出 ==========
     function switchTab(tab) {
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        event.target.classList.add('active');
+        const btns = document.querySelectorAll('.tab-btn');
+        btns.forEach(btn => btn.classList.remove('active'));
         if (tab === 'login') {
+            btns[0].classList.add('active');
             document.getElementById('loginForm').style.display = 'block';
             document.getElementById('registerForm').style.display = 'none';
         } else {
+            btns[1].classList.add('active');
             document.getElementById('loginForm').style.display = 'none';
             document.getElementById('registerForm').style.display = 'block';
         }
@@ -589,7 +968,7 @@
                 localStorage.setItem('token', token);
                 localStorage.setItem('userInfo', JSON.stringify(currentUser));
                 showMsg('🎉 登录成功', false);
-                showApp();
+                showList();
             } else {
                 showMsg(data.msg || '登录失败', true);
             }
@@ -630,153 +1009,92 @@
         }
     }
 
-   async function doLogout() {
-    try {
-        await fetch(API_BASE + '/users/logout', {
-            method: 'POST',
-            headers: {
-                'Authorization': 'Bearer ' + token,
-                'Content-Type': 'application/json'
+    async function doLogout() {
+        try {
+            await fetch(API_BASE + '/users/logout', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                }
+            });
+        } catch (err) {
+            console.log('登出请求失败:', err);
+        } finally {
+            token = '';
+            currentUser = null;
+            localStorage.removeItem('token');
+            localStorage.removeItem('userInfo');
+            showAuth();
+            showMsg('已退出登录', false);
+        }
+    }
+
+    // ========== 小说列表 ==========
+    async function loadNovels() {
+        isSearchMode = false;
+        document.getElementById('novelList').innerHTML = `
+            <div class="loading" style="grid-column: 1 / -1;">
+                <div class="spinner"></div>
+                <div>正在加载...</div>
+            </div>`;
+        try {
+            const res = await api(`/novels?page=${currentPage}&size=${PAGE_SIZE}`);
+            if (res.code === 200) {
+                allNovels = res.data.content;
+                totalPages = res.data.totalPages;
+                totalElements = res.data.totalElements;
+                renderNovels();
+                renderPagination();
+            } else {
+                showMsg(res.msg, true);
             }
-        });
-    } catch (err) {
-        console.log('登出请求失败:', err);
-    } finally {
-        token = '';
-        currentUser = null;
-        localStorage.removeItem('token');
-        localStorage.removeItem('userInfo');
-        showAuth();
-        showMsg('已退出登录', false);
-    }
-}
-
-    function showAuth() {
-        document.getElementById('authPanel').style.display = 'block';
-        document.getElementById('appPanel').style.display = 'none';
-    }
-
-    function showApp() {
-        document.getElementById('authPanel').style.display = 'none';
-        document.getElementById('appPanel').style.display = 'block';
-        if (currentUser) {
-            document.getElementById('currentUserName').textContent = '👤 ' + (currentUser.username || '用户');
-            document.getElementById('currentUserRole').textContent = isAdmin() ? '【管理员】' : '【普通用户】';
+        } catch (err) {
+            if (err.msg) showMsg(err.msg, true);
         }
-
-        const admin = isAdmin();
-        const addCard = document.getElementById('addBookCard');
-        if (addCard) addCard.style.display = admin ? 'block' : 'none';
-
-        loadBooks();
     }
 
-    // ========== 图书管理功能 ==========
-    let allBooks = [];
-    let currentPage = 1;
-    let totalPages = 1;
-    let totalElements = 0;
-    const PAGE_SIZE = 8;
-    let isSearchMode = false;
-
-    function showMsg(text, isError) {
-        const msg = document.getElementById('msg');
-        msg.textContent = (isError ? '❌ ' : '✅ ') + text;
-        msg.className = isError ? 'error' : 'success';
-        msg.classList.add('show');
-        if (msg._timer) clearTimeout(msg._timer);
-        msg._timer = setTimeout(() => {
-            msg.classList.remove('show');
-        }, 3000);
-    }
-
-    function renderPage() {
-        let pageBooks;
-        let displayTotalPages;
-
+    function renderNovels() {
+        const container = document.getElementById('novelList');
+        let pageData;
         if (isSearchMode) {
-            displayTotalPages = Math.ceil(allBooks.length / PAGE_SIZE);
-            if (currentPage > displayTotalPages) currentPage = Math.max(1, displayTotalPages);
             const start = (currentPage - 1) * PAGE_SIZE;
-            const end = start + PAGE_SIZE;
-            pageBooks = allBooks.slice(start, end);
-            document.getElementById('pageInfo').textContent =
-                allBooks.length > 0 ? `📊 共 ${allBooks.length} 本图书 | 第 ${currentPage}/${Math.max(1, displayTotalPages)} 页` : '';
+            pageData = allNovels.slice(start, start + PAGE_SIZE);
         } else {
-            displayTotalPages = totalPages;
-            if (currentPage > displayTotalPages) currentPage = Math.max(1, displayTotalPages);
-            pageBooks = allBooks;
-            document.getElementById('pageInfo').textContent =
-                totalElements > 0 ? `📊 共 ${totalElements} 本图书 | 第 ${currentPage}/${Math.max(1, displayTotalPages)} 页` : '';
+            pageData = allNovels;
         }
 
-        renderBooks(pageBooks);
-        renderPagination(displayTotalPages);
-    }
-
-    function renderBooks(books) {
-        const container = document.getElementById('bookList');
-        const admin = isAdmin();
-
-        if (books.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state" style="grid-column: 1 / -1;">
-                    <div class="empty-state-icon">📭</div>
-                    <div>暂无图书</div>
-                </div>`;
-            return;
-        }
-
-        let html = books.map((book, index) => `
-            <div class="book-card">
-                <div class="book-cover">
-                    <div class="book-spine"></div>
-                    <div class="book-order">${book.displayOrder}</div>
-                    <div class="book-name">${escapeHtml(book.name)}</div>
-                    <div class="book-id">ID: #${book.id}</div>
-                </div>
-                ${admin ? `
-                <div class="book-actions">
-                    <button class="btn-edit" onclick="editBook(${book.id}, '${escapeJs(book.name)}')">✏️ 修改</button>
-                    <button class="btn-del" onclick="deleteBook(${book.id})">🗑️ 删除</button>
-                </div>` : ''}
-            </div>
-        `).join('');
-
-        if (admin) {
-            html += `
-            <div class="book-card" onclick="document.getElementById('bookName').focus()">
-                <div class="add-placeholder">
-                    <div style="text-align:center;">
-                        <div style="font-size:2rem; margin-bottom:8px;">➕</div>
-                        <div>添加新书</div>
+        container.innerHTML = pageData.map(novel => {
+            const coverHtml = novel.coverUrl
+                ? `<img src="${escapeHtml(novel.coverUrl)}" class="novel-cover-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
+                : '';
+            return `
+            <div class="novel-card" onclick="showDetail(${novel.id})">
+                <div class="novel-cover" style="position:relative; overflow:hidden;">
+                    ${coverHtml}
+                    <div class="novel-cover-overlay" style="${novel.coverUrl ? '' : 'display:flex; flex-direction:column; justify-content:flex-end; height:100%;'}">
+                        <div class="novel-title">${escapeHtml(novel.title)}</div>
+                        <div class="novel-category">${escapeHtml(novel.category || '未分类')}</div>
                     </div>
+                    <div class="novel-status">${novel.status === 'ONGOING' ? '连载中' : '已完本'}</div>
+                </div>
+                <div class="novel-meta">
+                    <span>${novel.totalWords || 0} 字</span>
+                    <span class="novel-words">${novel.lastUpdateTime ? novel.lastUpdateTime.split('T')[0] : ''}</span>
                 </div>
             </div>`;
-        }
-
-        container.innerHTML = html;
+        }).join('');
     }
 
-    function escapeHtml(str) {
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    }
-
-    function escapeJs(str) {
-        return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
-    }
-
-    function renderPagination(totalPages) {
+    function renderPagination() {
         const container = document.getElementById('pagination');
         if (totalPages <= 1) {
             container.innerHTML = '';
+            document.getElementById('pageInfo').textContent = '';
             return;
         }
 
-        let html = '';
-        html += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>◀</button>`;
+        let html = `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>◀</button>`;
 
         const delta = 2;
         const range = [];
@@ -801,83 +1119,201 @@
 
         html += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>▶</button>`;
         container.innerHTML = html;
+        document.getElementById('pageInfo').textContent = `📊 共 ${totalElements} 本小说 | 第 ${currentPage}/${totalPages} 页`;
     }
 
     function changePage(page) {
+        if (page < 1 || page > totalPages) return;
         currentPage = page;
         if (isSearchMode) {
-            renderPage();
+            renderNovels();
         } else {
-            loadBooks();
+            loadNovels();
         }
     }
 
-    async function loadBooks() {
-        isSearchMode = false;
-        document.getElementById('bookList').innerHTML = `
-            <div class="loading" style="grid-column: 1 / -1;">
-                <div class="spinner"></div>
-                <div>正在加载...</div>
-            </div>`;
-        try {
-            const res = await api(`/books?page=${currentPage}&size=${PAGE_SIZE}`);
-            if (res.code === 200) {
-                allBooks = res.data.content;
-                totalPages = res.data.totalPages;
-                totalElements = res.data.totalElements;
-                renderPage();
-            } else {
-                showMsg(res.msg, true);
-            }
-        } catch (err) {
-            if (err.msg) showMsg(err.msg, true);
-        }
-    }
-
-    async function searchBook() {
+    // ========== 搜索 ==========
+    async function searchNovel() {
         const keyword = document.getElementById('searchKeyword').value.trim();
         if (!keyword) {
-            showMsg('请输入书名', true);
+            loadNovels();
             return;
         }
-
-        document.getElementById('bookList').innerHTML = `
+        isSearchMode = true;
+        document.getElementById('novelList').innerHTML = `
             <div class="loading" style="grid-column: 1 / -1;">
                 <div class="spinner"></div>
                 <div>正在搜索...</div>
             </div>`;
 
         try {
-            const res = await api(`/books/search?keyword=${encodeURIComponent(keyword)}`);
-            if (res.code !== 200) {
-                showMsg(res.msg, true);
-                return;
+            const res = await api(`/novels?page=1&size=100`);
+            if (res.code === 200) {
+                allNovels = res.data.content.filter(n => n.title.includes(keyword));
+                currentPage = 1;
+                totalPages = Math.ceil(allNovels.length / PAGE_SIZE) || 1;
+                totalElements = allNovels.length;
+                renderNovels();
+                renderPagination();
+                showMsg(`找到 ${allNovels.length} 本相关小说`, false);
             }
-            isSearchMode = true;
-            allBooks = res.data;
-            currentPage = 1;
-            renderPage();
-            showMsg(`找到 ${res.data.length} 本相关图书`, false);
         } catch (err) {
             if (err.msg) showMsg(err.msg, true);
         }
     }
 
-    async function addBook() {
-        const name = document.getElementById('bookName').value.trim();
-        if (!name) {
-            showMsg('请输入书名！', true);
+    // ========== 小说详情 ==========
+    async function loadNovelDetail(novelId) {
+        try {
+            const res = await api(`/novels/${novelId}`);
+            if (res.code === 200) {
+                const novel = res.data;
+                currentChapters = novel.chapters || [];
+
+                document.getElementById('detailTitle').textContent = novel.title;
+                document.getElementById('detailCategory').textContent = novel.category || '未分类';
+                document.getElementById('detailStatus').textContent = novel.status === 'ONGOING' ? '连载中' : '已完本';
+                document.getElementById('detailWords').textContent = (novel.totalWords || 0) + ' 字';
+                document.getElementById('detailSummary').textContent = novel.summary || '暂无简介';
+
+                const coverEl = document.getElementById('detailCover');
+                if (novel.coverUrl) {
+                    coverEl.innerHTML = `<img src="${escapeHtml(novel.coverUrl)}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;" onerror="this.parentElement.innerText='${escapeHtml(novel.title)}'">`;
+                } else {
+                    coverEl.textContent = novel.title;
+                }
+
+                const chapterList = document.getElementById('chapterList');
+                if (currentChapters.length === 0) {
+                    chapterList.innerHTML = '<div class="empty-state">暂无章节</div>';
+                } else {
+                    chapterList.innerHTML = currentChapters.map((ch, idx) => `
+                        <div class="chapter-item">
+                            <div style="display:flex;align-items:center;flex:1;min-width:0;" onclick="showRead(${novel.id}, ${ch.id})">
+                                <span class="chapter-number">第${ch.chapterNumber}章</span>
+                                <span class="chapter-title">${escapeHtml(ch.title)}</span>
+                                <span class="chapter-wordcount">${ch.wordCount || 0}字</span>
+                            </div>
+                            ${isAdmin() ? `
+                                <div class="chapter-actions">
+                                    <button class="btn-edit" onclick="event.stopPropagation();showEditChapterModal(${ch.id})">编辑</button>
+                                    <button class="btn-del" onclick="event.stopPropagation();doDeleteChapter(${ch.id})">删除</button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `).join('');
+                }
+            } else {
+                showMsg(res.msg, true);
+            }
+        } catch (err) {
+            if (err.msg) showMsg(err.msg, true);
+        }
+    }
+
+    // ========== 阅读章节 ==========
+    async function loadChapter(novelId, chapterId) {
+        try {
+            const res = await api(`/novels/${novelId}/chapters/${chapterId}`);
+            if (res.code === 200) {
+                const chapter = res.data;
+                document.getElementById('readTitle').textContent = `第${chapter.chapterNumber}章 ${chapter.title}`;
+                document.getElementById('readContent').textContent = chapter.content || '（本章无内容）';
+
+                currentChapterIndex = currentChapters.findIndex(c => c.id === chapterId);
+                updateNavButtons();
+            } else {
+                showMsg(res.msg, true);
+            }
+        } catch (err) {
+            if (err.msg) showMsg(err.msg, true);
+        }
+    }
+
+    function updateNavButtons() {
+        const prevBtn = document.getElementById('prevChapterBtn');
+        const nextBtn = document.getElementById('nextChapterBtn');
+        const finishEl = document.getElementById('readFinish');
+
+        prevBtn.disabled = currentChapterIndex <= 0;
+
+        const isLast = currentChapterIndex >= currentChapters.length - 1;
+        nextBtn.disabled = isLast;
+        finishEl.style.display = isLast ? 'block' : 'none';
+    }
+
+    function prevChapter() {
+        if (currentChapterIndex > 0) {
+            const ch = currentChapters[currentChapterIndex - 1];
+            showRead(currentNovelId, ch.id);
+        }
+    }
+
+    function nextChapter() {
+        if (currentChapterIndex < currentChapters.length - 1) {
+            const ch = currentChapters[currentChapterIndex + 1];
+            showRead(currentNovelId, ch.id);
+        }
+    }
+
+    // ========== 管理员：创建小说 ==========
+    function showCreateNovelModal() {
+        document.getElementById('createNovelModal').classList.add('show');
+    }
+
+    function showAddChapterModal() {
+        document.getElementById('chapterTitle').value = '';
+        document.getElementById('chapterContent').value = '';
+        document.getElementById('addChapterModal').classList.add('show');
+    }
+
+    function showEditChapterModal(chapterId) {
+        const ch = currentChapters.find(c => c.id === chapterId);
+        if (!ch) return;
+        document.getElementById('editChapterId').value = chapterId;
+        document.getElementById('editChapterTitle').value = ch.title;
+        api(`/novels/${currentNovelId}/chapters/${chapterId}`).then(res => {
+            if (res.code === 200) {
+                document.getElementById('editChapterContent').value = res.data.content || '';
+                document.getElementById('editChapterModal').classList.add('show');
+            } else {
+                showMsg(res.msg, true);
+            }
+        }).catch(err => {
+            if (err.msg) showMsg(err.msg, true);
+        });
+    }
+
+    function hideModal(id) {
+        document.getElementById(id).classList.remove('show');
+    }
+
+    async function doCreateNovel() {
+        const title = document.getElementById('novelTitle').value.trim();
+        const category = document.getElementById('novelCategory').value.trim();
+        const summary = document.getElementById('novelSummary').value.trim();
+        const coverUrl = document.getElementById('novelCover').value.trim();
+
+        if (!title || !category || !summary) {
+            showMsg('请填写完整信息', true);
             return;
         }
+
         try {
-            const res = await api('/books', {
+            const res = await api('/novels', {
                 method: 'POST',
-                body: { name: name }
+                body: { title, category, summary, coverUrl }
             });
             if (res.code === 200) {
-                showMsg('添加成功', false);
-                document.getElementById('bookName').value = '';
-                loadBooks();
+                showMsg('✅ 创建成功', false);
+                hideModal('createNovelModal');
+                document.getElementById('novelTitle').value = '';
+                document.getElementById('novelCategory').value = '';
+                document.getElementById('novelSummary').value = '';
+                document.getElementById('novelCover').value = '';
+                document.getElementById('coverFileName').textContent = '未选择文件';
+                document.getElementById('coverPreview').style.display = 'none';
+                loadNovels();
             } else {
                 showMsg(res.msg, true);
             }
@@ -886,20 +1322,26 @@
         }
     }
 
-    async function editBook(id, oldName) {
-        const newName = prompt('请输入新书名：', oldName);
-        if (newName === null || newName.trim() === '') {
-            showMsg('书名不能为空', true);
+    async function doAddChapter() {
+        const title = document.getElementById('chapterTitle').value.trim();
+        const content = document.getElementById('chapterContent').value.trim();
+
+        if (!title || !content) {
+            showMsg('请填写章节标题和正文', true);
             return;
         }
+
         try {
-            const res = await api(`/books/${id}`, {
-                method: 'PUT',
-                body: { name: newName.trim() }
+            const res = await api(`/novels/${currentNovelId}/chapters`, {
+                method: 'POST',
+                body: { title, content }
             });
             if (res.code === 200) {
-                showMsg('修改成功', false);
-                loadBooks();
+                showMsg('✅ 发布成功', false);
+                hideModal('addChapterModal');
+                document.getElementById('chapterTitle').value = '';
+                document.getElementById('chapterContent').value = '';
+                loadNovelDetail(currentNovelId);
             } else {
                 showMsg(res.msg, true);
             }
@@ -908,13 +1350,115 @@
         }
     }
 
-    async function deleteBook(id) {
-        if (!confirm('确定要删除这本书吗？')) return;
+    async function doUpdateChapter() {
+        const chapterId = document.getElementById('editChapterId').value;
+        const title = document.getElementById('editChapterTitle').value.trim();
+        const content = document.getElementById('editChapterContent').value.trim();
+
+        if (!title || !content) {
+            showMsg('请填写章节标题和正文', true);
+            return;
+        }
+
         try {
-            const res = await api(`/books/${id}`, { method: 'DELETE' });
+            const res = await api(`/novels/${currentNovelId}/chapters/${chapterId}`, {
+                method: 'PUT',
+                body: { title, content }
+            });
             if (res.code === 200) {
-                showMsg('删除成功', false);
-                loadBooks();
+                showMsg('✅ 修改成功', false);
+                hideModal('editChapterModal');
+                loadNovelDetail(currentNovelId);
+            } else {
+                showMsg(res.msg, true);
+            }
+        } catch (err) {
+            if (err.msg) showMsg(err.msg, true);
+        }
+    }
+
+    async function doDeleteChapter(chapterId) {
+        if (!confirm('确定要删除该章节吗？删除后不可恢复！')) return;
+        try {
+            const res = await api(`/novels/${currentNovelId}/chapters/${chapterId}`, {
+                method: 'DELETE'
+            });
+            if (res.code === 200) {
+                showMsg('✅ 删除成功', false);
+                loadNovelDetail(currentNovelId);
+            } else {
+                showMsg(res.msg, true);
+            }
+        } catch (err) {
+            if (err.msg) showMsg(err.msg, true);
+        }
+    }
+
+    // ========== 封面上传 ==========
+    async function uploadCover() {
+        const fileInput = document.getElementById('coverFile');
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        document.getElementById('coverFileName').textContent = file.name;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('coverPreviewImg').src = e.target.result;
+            document.getElementById('coverPreview').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const res = await fetch(API_BASE + '/upload', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token },
+                body: formData
+            });
+            const data = await res.json();
+            if (data.code === 200) {
+                document.getElementById('novelCover').value = data.data;
+                showMsg('📷 封面上传成功', false);
+            } else {
+                showMsg(data.msg || '上传失败', true);
+            }
+        } catch (err) {
+            showMsg('上传失败，请检查网络', true);
+        }
+    }
+
+    // ========== 工具函数 ==========
+    function showMsg(text, isError) {
+        const msg = document.getElementById('msg');
+        msg.textContent = (isError ? '❌ ' : '✅ ') + text;
+        msg.className = isError ? 'error' : 'success';
+        msg.classList.add('show');
+        if (msg._timer) clearTimeout(msg._timer);
+        msg._timer = setTimeout(() => {
+            msg.classList.remove('show');
+        }, 3000);
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    async function doDeleteNovel() {
+        if (!confirm('确定要删除这本小说吗？\n所有章节会一并删除，且不可恢复！')) return;
+        try {
+            const res = await api(`/novels/${currentNovelId}`, {
+                method: 'DELETE'
+            });
+            if (res.code === 200) {
+                showMsg('✅ 小说已删除', false);
+                showList();
+                loadNovels();
             } else {
                 showMsg(res.msg, true);
             }

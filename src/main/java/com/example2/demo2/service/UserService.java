@@ -124,8 +124,6 @@ public class UserService {
 
     public LoginVO refresh(String refreshToken) {
         // ========== 1. 去 Redis 反查这个 refreshToken 属于哪个用户 ==========
-        // 扫描所有 refresh:* 的 key，找到匹配的 token
-        // 生产环境建议用 Hash 结构：HGET refresh_tokens refreshToken
         String userIdStr = null;
         Set<String> keys = stringRedisTemplate.keys("refresh:*");
         if (keys != null) {
@@ -143,21 +141,34 @@ public class UserService {
         }
 
         Integer userId = Integer.valueOf(userIdStr);
+        String key = "refresh:" + userId;
 
-        // ========== 2. 生成新的 Access Token ==========
+        // ========== 2. 删除旧的 Refresh Token ==========
+        stringRedisTemplate.delete(key);
+
+        // ========== 3. 查用户信息 ==========
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
 
+        // ========== 4. 生成新的 Access Token ==========
         String newAccessToken = jwtUtil.generateToken(
                 user.getId(),
                 user.getUsername(),
                 user.getRole()
         );
 
-        // ========== 3. 组装返回 ==========
+        // ========== 5. 生成新的 Refresh Token ==========
+        String newRefreshToken = UUID.randomUUID().toString();
+        stringRedisTemplate.opsForValue().set(
+                key,
+                newRefreshToken,
+                7, TimeUnit.DAYS
+        );
+
+        // ========== 6. 组装返回 ==========
         LoginVO vo = new LoginVO();
         vo.setToken(newAccessToken);
-        vo.setRefreshToken(refreshToken);   // 继续用原来的
+        vo.setRefreshToken(newRefreshToken);  // 返回新的
         user.setPasswordHash(null);
         vo.setUserInfo(user);
 

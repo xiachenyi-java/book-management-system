@@ -58,8 +58,14 @@ public class JwtUtil {
         return Integer.valueOf(claims.getSubject());
     }
 
+    //提取token的名字
     public String getUsernameFromToken(String token) {
         Claims claims = parseToken(token);
         return claims.get("username", String.class);
+    }
+
+    public String getUserRoleFromToken(String token){
+        Claims claims = parseToken(token);
+        return claims.get("role",String.class);
     }
 }

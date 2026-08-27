@@ -1,6 +1,5 @@
 package com.example2.demo2.service;
 
-import com.example2.demo2.entity.Book;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

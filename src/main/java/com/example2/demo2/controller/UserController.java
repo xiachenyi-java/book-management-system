@@ -1,9 +1,8 @@
 package com.example2.demo2.controller;
 
-import com.example2.demo2.common.RateLimit;
+import com.example2.demo2.common.annotation.RateLimit;
 import com.example2.demo2.common.Result;
 import com.example2.demo2.common.UserContext;
-import com.example2.demo2.common.exception.RateLimitException;
 import com.example2.demo2.dto.LoginDTO;
 import com.example2.demo2.dto.RefreshTokenDTO;
 import com.example2.demo2.dto.UserRegisterDTO;
@@ -24,7 +23,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.security.Key;
 import java.util.concurrent.TimeUnit;
 
 /**
