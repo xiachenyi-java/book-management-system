@@ -65,8 +65,18 @@ public class UserController {
             token = token.substring(7);
         }
         log.info("用户登出: userId={}", UserContext.getUser().getUserId());
+        //获取用户id
+        Integer userId = UserContext.getUser().getUserId();
+        //用反向索引，找到刷新令牌
+        String refreshToken = stringRedisTemplate.opsForValue().get("user_refresh:" + userId);
+        //如果找到了，把两份索引都删掉
+        if (refreshToken != null) {
+            stringRedisTemplate.delete("refresh_token:" + refreshToken);  // 删正向
+            stringRedisTemplate.delete("user_refresh:" + userId);         // 删反向
+        }
         String key = "blacklist:token:" +token;
         stringRedisTemplate.opsForValue().set(key,"logout",120, TimeUnit.MINUTES);
+
         return Result.success();
     }
 

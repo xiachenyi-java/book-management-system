@@ -7,6 +7,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 /**
  * 夏辰义
@@ -31,7 +32,7 @@ public class GlobalExceptionHandler {
         return Result.error(msg);
     }
 
-    //自定义异常
+    //限流异常异常
     @ExceptionHandler(RateLimitException.class)
     @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)  // 这个注解会让 HTTP 状态码变成 429
     public Result<Void> handleRateLimit(RateLimitException e) {
@@ -39,7 +40,14 @@ public class GlobalExceptionHandler {
         return Result.error(e.getStatus(), e.getMessage());
     }
 
-    //所有异常最后的底裤
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public Result<Void> handleFileSizeException(MethodArgumentNotValidException e){
+        log.warn("传输文件过大: {}",e.getMessage());
+        return Result.error("上传失败：文件大小不能超过 10MB");
+    }
+
+    //;所有异常最后的底裤
     @ExceptionHandler(Exception.class)
     public Result<Void> Exception(Exception e){
         log.warn("最后的异常处理器:",e);

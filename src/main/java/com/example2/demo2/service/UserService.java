@@ -15,6 +15,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -39,6 +40,7 @@ public class UserService {
 
     private final StringRedisTemplate stringRedisTemplate;
 
+    //注册
     public User register(UserRegisterDTO dto){
         if (userRepository.findByUsername(dto.getUsername()).isPresent()){
             throw new RuntimeException("用户名已存在");
@@ -57,13 +59,11 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    //登陆
     public LoginVO login(LoginDTO dto){
-        //账号是否存在
-        if (userRepository.findByUsername(dto.getUsername()).isEmpty()){
-            throw new RuntimeException("用户名或密码错误");
-        }
-        User user = userRepository.findByUsername(dto.getUsername()).orElse(null);
-
+        //账号是否存在,然后拿到user
+        User user = userRepository.findByUsername(dto.getUsername())
+                .orElseThrow(() -> new RuntimeException("用户名或密码错误"));
         //密码是否正确
         if (!(bCryptPasswordEncoder.matches(dto.getPassword(), user.getPasswordHash()))){
 
@@ -75,8 +75,8 @@ public class UserService {
         String refreshToken = UUID.randomUUID().toString();
         //
         stringRedisTemplate.opsForValue().set(
-                "refresh:" + user.getId(),
-                refreshToken,
+                "refresh_token:" + refreshToken,//key改成token本身
+                String.valueOf(user.getId()),//value改成用户id
                 7, TimeUnit.DAYS
         );
         //清除敏感信息
@@ -122,20 +122,10 @@ public class UserService {
         return dbUser;
     }
 
+    //刷新令牌
     public LoginVO refresh(String refreshToken) {
-        // ========== 1. 去 Redis 反查这个 refreshToken 属于哪个用户 ==========
-        String userIdStr = null;
-        Set<String> keys = stringRedisTemplate.keys("refresh:*");
-        if (keys != null) {
-            for (String key : keys) {
-                String storedToken = stringRedisTemplate.opsForValue().get(key);
-                if (refreshToken.equals(storedToken)) {
-                    userIdStr = key.replace("refresh:", "");
-                    break;
-                }
-            }
-        }
-
+        // ========== 1.直接查，不需要遍历，不要keys==========
+        String userIdStr = stringRedisTemplate.opsForValue().get("refresh_token:" + refreshToken);
         if (userIdStr == null) {
             throw new RuntimeException("刷新令牌已过期或不存在");
         }
@@ -144,7 +134,7 @@ public class UserService {
         String key = "refresh:" + userId;
 
         // ========== 2. 删除旧的 Refresh Token ==========
-        stringRedisTemplate.delete(key);
+        stringRedisTemplate.delete("refresh_token:" + refreshToken);
 
         // ========== 3. 查用户信息 ==========
         User user = userRepository.findById(userId)
@@ -160,8 +150,8 @@ public class UserService {
         // ========== 5. 生成新的 Refresh Token ==========
         String newRefreshToken = UUID.randomUUID().toString();
         stringRedisTemplate.opsForValue().set(
-                key,
-                newRefreshToken,
+                "refresh_token:" + newRefreshToken,
+                String.valueOf(user.getId()),
                 7, TimeUnit.DAYS
         );
 

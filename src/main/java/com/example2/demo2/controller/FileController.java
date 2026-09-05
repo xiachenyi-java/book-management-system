@@ -47,7 +47,19 @@ public class FileController {
                     : ".jpg";
             String newName = UUID.randomUUID() + ext;
 
+            //目标路径
             Path targetPath = Paths.get(uploadPath, newName);
+            //路径安全效验
+            //将基础目录转化为标准化绝对路径
+            Path baseDir = Paths.get(uploadPath).toAbsolutePath().normalize();
+            //将最终文件转化为标准化绝对路径
+            Path fullPath = targetPath.toAbsolutePath().normalize();
+            //判断目标路径是否以基础路径为前缀
+            if(!fullPath.startsWith(baseDir)){
+                log.error("检测到非法路径穿越攻击！目标路径：{}",fullPath);
+                return Result.error("上传失败：非法的文件存储路径");
+            }
+
             Files.copy(file.getInputStream(), targetPath);
 
             String url = "http://localhost:8080/uploads/" + newName;

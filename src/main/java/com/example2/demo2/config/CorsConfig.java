@@ -1,5 +1,6 @@
 package com.example2.demo2.config;
 
+import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -7,6 +8,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * 夏辰义
  * 2026/8/2217:05
  */
+@Configuration
 public class CorsConfig implements WebMvcConfigurer {
 
     @Override
