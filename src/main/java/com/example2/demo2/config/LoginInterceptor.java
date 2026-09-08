@@ -55,15 +55,25 @@ public class LoginInterceptor implements HandlerInterceptor {
                 try {
                     Claims claims = jwtUtil.parseToken(token);
                     // 检查黑名单（如果在黑名单里，就不设置用户上下文，直接当游客）
-                    String blacklistKey = "blacklist:token:" + token;
-                    Boolean isBlacklisted = stringRedisTemplate.hasKey(blacklistKey);
-                    if (Boolean.FALSE.equals(isBlacklisted)) {
-                        UserContextDTO dto = new UserContextDTO();
-                        dto.setUsername(jwtUtil.getUsernameFromToken(token));
-                        dto.setUserId(jwtUtil.getUserIdFromToken(token));
-                        dto.setRole(claims.get("role", String.class));
-                        UserContext.setUser(dto);
-                    }
+                    Integer userId = Integer.valueOf(claims.getSubject());
+                    String hashKey = "blacklist:user:" + userId;
+                    Object expireObj = stringRedisTemplate.opsForHash().get(hashKey,token);
+                    boolean shouldSetContext = true;  // 默认当他是合法登录用户
+                  if (expireObj != null){
+                      long expireAt = Long.parseLong(expireObj.toString());
+                      if (expireAt >= System.currentTimeMillis()){
+                          shouldSetContext = false;
+                      }else if (expireAt < System.currentTimeMillis()){
+                          stringRedisTemplate.opsForHash().delete(hashKey,token);
+                      }
+                  }
+                  if (shouldSetContext){
+                      UserContextDTO dto = new UserContextDTO();
+                      dto.setUsername(jwtUtil.getUsernameFromToken(token));
+                      dto.setUserId(jwtUtil.getUserIdFromToken(token));
+                      dto.setRole(claims.get("role",String.class));
+                      UserContext.setUser(dto);
+                  }
                 } catch (Exception e) {
                     // Token 无效，什么也不做（不打印错误，保持日志干净）
                 }
@@ -88,12 +98,20 @@ public class LoginInterceptor implements HandlerInterceptor {
             }
 
             //查黑名单
-            String blacklistKey = "blacklist:token:" + token;
-            Boolean isBlacklisted = stringRedisTemplate.hasKey(blacklistKey);
-            if (Boolean.TRUE.equals(isBlacklisted)) {
-                writeUnauthorized(response);  // 返回 401
-                return false;
-            }
+            Integer userId = Integer.valueOf(claims.getSubject());
+            String hashKey = "blacklist:user:" + userId;
+            Object expireObj = stringRedisTemplate.opsForHash().get(hashKey,token);
+           if (expireObj != null){
+               long expireAt = Long.parseLong(expireObj.toString());
+               if (expireAt > System.currentTimeMillis()){
+                   //在黑名单里拦截
+                   writeUnauthorized(response);
+                   return false;
+               }else {
+                   //过期了，删除放行
+                   stringRedisTemplate.opsForHash().delete(hashKey,token);
+               }
+           }
 
             // 设置 ThreadLocal
             UserContextDTO dto = new UserContextDTO();

@@ -74,8 +74,9 @@ public class UserController {
             stringRedisTemplate.delete("refresh_token:" + refreshToken);  // 删正向
             stringRedisTemplate.delete("user_refresh:" + userId);         // 删反向
         }
-        String key = "blacklist:token:" +token;
-        stringRedisTemplate.opsForValue().set(key,"logout",120, TimeUnit.MINUTES);
+        String key = "blacklist:user:" +userId;
+        long expireTime =System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(120);
+        stringRedisTemplate.opsForHash().put(key,token,String.valueOf(expireTime));
 
         return Result.success();
     }
