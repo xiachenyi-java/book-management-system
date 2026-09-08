@@ -5,7 +5,10 @@ import com.example2.demo2.dto.NovelDTO;
 import com.example2.demo2.entity.Chapter;
 import com.example2.demo2.entity.Novel;
 import com.example2.demo2.vo.NovelDetailVO;
+import com.example2.demo2.vo.NovelRankVO;
 import org.springframework.data.domain.Page;
+
+import java.util.List;
 
 public interface INovelService {
     // ========== 1. 创建小说 ==========
@@ -31,4 +34,7 @@ public interface INovelService {
 
     // 3. 阅读某一章（返回完整正文）
      Chapter readChapter(Integer novelId, Integer chapterId);
+
+     //返回排行榜
+    List<NovelRankVO> findRanking(int top);
 }

@@ -9,6 +9,9 @@ import com.example2.demo2.entity.Novel;
 import com.example2.demo2.repository.ChapterRepository;
 import com.example2.demo2.repository.NovelRepository;
 import com.example2.demo2.vo.NovelDetailVO;
+import com.example2.demo2.vo.NovelRankVO;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +23,9 @@ import org.springframework.stereotype.Service;
 
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * 夏辰义
@@ -34,6 +39,8 @@ public class NovelServiceIml implements INovelService{
     private final NovelRepository novelRepository;
 
     private final ChapterRepository chapterRepository;
+
+    private final StringRedisTemplate stringRedisTemplate;
 
         // ========== 1. 创建小说 ==========
         @RequireAdmin
@@ -151,6 +158,7 @@ public class NovelServiceIml implements INovelService{
     // ========== 读者接口 ==========
 
     // 1. 小说列表（分页，按更新时间倒序）
+    @Override
     public Page<Novel> findPage(int page, int size) {
         Pageable pageable = PageRequest.of(page - 1, size,
                 Sort.by("lastUpdateTime").descending());
@@ -202,6 +210,58 @@ public class NovelServiceIml implements INovelService{
         if (!chapter.getNovelId().equals(novelId)) {
             throw new BusinessException("该章节不属于此小说");
         }
+        stringRedisTemplate.opsForZSet().incrementScore("ranking:novel:total",String.valueOf(novelId),1);
         return chapter;
+    }
+
+    //查询排行榜
+    @Override
+    public List<NovelRankVO> findRanking(int top){
+            String rankKey = "ranking:novel:total";
+            //从redis取数据
+        Set<ZSetOperations.TypedTuple<String>> tuples =
+                stringRedisTemplate.opsForZSet().reverseRangeWithScores(rankKey,0,top - 1);
+        // 如果 Redis 里没有数据（刚上线），直接返回空列表，不要报错
+        if (tuples == null || tuples.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 2. 准备两个容器：一个存有序的 ID 列表，一个存 ID->热度的映射
+        List<Integer> novelIds = new ArrayList<>();//用来保持顺序
+        Map<Integer,Double> scoreMap = new HashMap<>();//用来放热度
+
+        for (ZSetOperations.TypedTuple<String> tuple : tuples){
+            Integer id = Integer.valueOf(tuple.getValue()); //拿到小说id
+            Double score =tuple.getScore();//拿到热度分数
+            novelIds.add(id);
+            scoreMap.put(id,score);
+        }
+        // 3. 批量查数据库（拿到所有小说的详细信息）
+        List<Novel> novels = novelRepository.findAllById(novelIds);
+        Map<Integer,Novel> novelMap  = novels.stream()
+                .collect(Collectors.toMap(
+                        Novel::getId,
+                        Function.identity()
+                ));
+
+        // 4. 按顺序遍历 novelIds，组装成 VO 列表
+        List<NovelRankVO> result = new ArrayList<>();
+        for (Integer id : novelIds) {
+            Novel novel = novelMap.get(id);
+            // 如果小说被删了，跳过（防止空指针）
+            if (novel == null) {
+                continue;
+            }
+
+            NovelRankVO vo = new NovelRankVO();
+            vo.setNovelId(id);
+            vo.setTitle(novel.getTitle());
+            vo.setCoverUrl(novel.getCoverUrl());
+            // 热度从 scoreMap 里拿，Double 转成 Long（因为前端看整数）
+            vo.setHeat(scoreMap.get(id).longValue());
+
+            result.add(vo);
+        }
+        return result;
     }
 }

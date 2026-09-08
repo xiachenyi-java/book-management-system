@@ -9,6 +9,7 @@ import com.example2.demo2.entity.Novel;
 import com.example2.demo2.service.INovelService;
 import com.example2.demo2.service.NovelServiceIml;
 import com.example2.demo2.vo.NovelDetailVO;
+import com.example2.demo2.vo.NovelRankVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -16,6 +17,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 夏辰义
@@ -98,5 +101,15 @@ public class NovelController {
             @PathVariable Integer novelId,
             @PathVariable Integer chapterId) {
         return Result.success(iNovelService.readChapter(novelId, chapterId));
+    }
+
+    @Operation(summary = "热门小说排行榜")
+    @GetMapping("/ranking")
+    public  Result<List<NovelRankVO>> ranking(@RequestParam(defaultValue = "10") int top){
+        // 防止有人恶意传 10000，做一下限制
+        if (top > 100) {
+            top = 100;
+        }
+        return Result.success(iNovelService.findRanking(top));
     }
 }
