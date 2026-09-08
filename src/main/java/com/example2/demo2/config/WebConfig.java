@@ -41,7 +41,8 @@ public class WebConfig implements WebMvcConfigurer {
                         "/*.html",
                         "/favicon.ico",
                         "/users/refresh",
-                        "/uploads/**"          // 封面图允许匿名访问
+                        "/uploads/**",          // 封面图允许匿名访问
+                        "doc.html"
                 );
     }
 

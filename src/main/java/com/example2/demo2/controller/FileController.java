@@ -24,6 +24,9 @@ public class FileController {
     @Value("${upload.path:${user.dir}/uploads}")
     private String uploadPath;
 
+    @Value("${file.base-url:http://localhost:8080}")
+    private String baseUrl;
+
     @PostMapping
     public Result<String> upload(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
@@ -62,7 +65,8 @@ public class FileController {
 
             Files.copy(file.getInputStream(), targetPath);
 
-            String url = "http://localhost:8080/uploads/" + newName;
+
+            String url = baseUrl + "/uploads/" + newName;
             log.info("文件上传成功: {}", url);
 
             return Result.success(url);

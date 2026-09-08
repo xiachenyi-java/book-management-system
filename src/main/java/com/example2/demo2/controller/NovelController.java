@@ -6,7 +6,8 @@ import com.example2.demo2.dto.ChapterDTO;
 import com.example2.demo2.dto.NovelDTO;
 import com.example2.demo2.entity.Chapter;
 import com.example2.demo2.entity.Novel;
-import com.example2.demo2.service.NovelService;
+import com.example2.demo2.service.INovelService;
+import com.example2.demo2.service.NovelServiceIml;
 import com.example2.demo2.vo.NovelDetailVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -15,8 +16,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Scanner;
 
 /**
  * 夏辰义
@@ -29,7 +28,7 @@ import java.util.Scanner;
 @RequiredArgsConstructor
 public class NovelController {
 
-    private final NovelService novelService;
+    private final INovelService iNovelService;
 
     // ===== 管理员接口 =====
 
@@ -37,7 +36,7 @@ public class NovelController {
     @Operation(summary = "创建小说")
     @PostMapping
     public Result<Novel> addNovel(@RequestBody @Valid NovelDTO dto) {
-        return Result.success(novelService.addNovel(dto));
+        return Result.success(iNovelService.addNovel(dto));
     }
 
     @RequireAdmin
@@ -46,7 +45,7 @@ public class NovelController {
     public Result<Chapter> addChapter(
             @PathVariable Integer novelId,
             @RequestBody @Valid ChapterDTO dto) {
-        return Result.success(novelService.addChapter(novelId, dto));
+        return Result.success(iNovelService.addChapter(novelId, dto));
     }
 
     @RequireAdmin
@@ -56,7 +55,7 @@ public class NovelController {
             @PathVariable Integer novelId,
             @PathVariable Integer chapterId,
             @RequestBody @Valid ChapterDTO dto) {
-        return Result.success(novelService.updateChapter(novelId, chapterId, dto));
+        return Result.success(iNovelService.updateChapter(novelId, chapterId, dto));
     }
 
     @RequireAdmin
@@ -65,7 +64,7 @@ public class NovelController {
     public Result<Void> deleteChapter(
             @PathVariable Integer novelId,
             @PathVariable Integer chapterId) {
-        novelService.deleteChapter(novelId, chapterId);
+        iNovelService.deleteChapter(novelId, chapterId);
         return Result.success();
     }
 
@@ -73,7 +72,7 @@ public class NovelController {
     @Operation(summary = "删除小说")
     @DeleteMapping("/{id}")
     public Result<Void> deleteNovel(@PathVariable Integer id) {
-        novelService.deleteNovel(id);
+        iNovelService.deleteNovel(id);
         return Result.success();
     }
 
@@ -84,13 +83,13 @@ public class NovelController {
     public Result<Page<Novel>> list(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return Result.success(novelService.findPage(page, size));
+        return Result.success(iNovelService.findPage(page, size));
     }
 
     @Operation(summary = "小说详情")
     @GetMapping("/{id}")
     public Result<NovelDetailVO> detail(@PathVariable Integer id) {
-        return Result.success(novelService.findDetail(id));
+        return Result.success(iNovelService.findDetail(id));
     }
 
     @Operation(summary = "阅读章节")
@@ -98,6 +97,6 @@ public class NovelController {
     public Result<Chapter> readChapter(
             @PathVariable Integer novelId,
             @PathVariable Integer chapterId) {
-        return Result.success(novelService.readChapter(novelId, chapterId));
+        return Result.success(iNovelService.readChapter(novelId, chapterId));
     }
 }

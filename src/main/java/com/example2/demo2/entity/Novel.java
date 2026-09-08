@@ -24,7 +24,7 @@ public class Novel {
     @Column(length = 2000)
     private String summary; //简介
 
-    private String coverUr1;//封面图地址
+    private String coverUrl;//封面图地址
 
     @Column(nullable = false)
     private String category;//类别

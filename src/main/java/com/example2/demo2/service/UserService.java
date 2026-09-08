@@ -2,21 +2,20 @@ package com.example2.demo2.service;
 
 import com.example2.demo2.common.JwtUtil;
 import com.example2.demo2.common.UserContext;
+import com.example2.demo2.common.exception.BusinessException;
 import com.example2.demo2.dto.LoginDTO;
 import com.example2.demo2.dto.UserContextDTO;
 import com.example2.demo2.dto.UserRegisterDTO;
 import com.example2.demo2.entity.User;
 import com.example2.demo2.repository.UserRepository;
 import com.example2.demo2.vo.LoginVO;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import tools.jackson.databind.ObjectMapper;
-
-import java.util.Optional;
-import java.util.Set;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -43,7 +42,7 @@ public class UserService {
     //注册
     public User register(UserRegisterDTO dto){
         if (userRepository.findByUsername(dto.getUsername()).isPresent()){
-            throw new RuntimeException("用户名已存在");
+            throw new BusinessException("用户名已存在");
         }
         log.info("注册用户: username={}",dto.getUsername());
 
@@ -63,11 +62,11 @@ public class UserService {
     public LoginVO login(LoginDTO dto){
         //账号是否存在,然后拿到user
         User user = userRepository.findByUsername(dto.getUsername())
-                .orElseThrow(() -> new RuntimeException("用户名或密码错误"));
+                .orElseThrow(() -> new BusinessException("用户名或密码错误"));
         //密码是否正确
         if (!(bCryptPasswordEncoder.matches(dto.getPassword(), user.getPasswordHash()))){
 
-            throw new RuntimeException("用户名或密码错误");
+            throw new BusinessException("用户名或密码错误");
         }
         //生成token
         String token = jwtUtil.generateToken(user.getId(), user.getUsername(),user.getRole());
@@ -87,8 +86,6 @@ public class UserService {
         loginVO.setRefreshToken(refreshToken);
         loginVO.setUserInfo(user);
 
-
-        String userJson = objectMapper.writeValueAsString(user);
         return loginVO;
     }
 
@@ -97,7 +94,7 @@ public class UserService {
         //1.获取ThreadLocal用户
         UserContextDTO user = UserContext.getUser();
         if (user.getUserId() == null){
-            throw new RuntimeException("用户未登录");
+            throw new BusinessException("用户未登录");
         }
         long userId = user.getUserId();
 
@@ -106,19 +103,28 @@ public class UserService {
         String userJson = stringRedisTemplate.opsForValue().get(key);
         if (userJson != null){
             // 缓存命中，JSON 反序列化后直接返回
-            return objectMapper.readValue(userJson, User.class);
+            try {
+                return objectMapper.readValue(userJson, User.class);
+            } catch (JsonProcessingException e) {
+                log.error("Redis 缓存用户数据解析失败, userId={}, json={}",userId,userJson,e);
+                stringRedisTemplate.delete(key);
+            }
         }
 
         // 3.缓存未命中，查数据库
         User dbUser = userRepository.findById(user.getUserId()).orElseThrow(()
-                -> new RuntimeException("用户不存在"));
+                -> new BusinessException("用户不存在"));
         // 4. 写入 Redis（设置过期时间，防止永久驻留）
-        stringRedisTemplate.opsForValue().set(
-                key,
-                objectMapper.writeValueAsString(dbUser),// Jackson
-                30,
-                TimeUnit.MINUTES
-        );
+        try {
+            String json = objectMapper.writeValueAsString(dbUser);
+            stringRedisTemplate.opsForValue().set(
+                    key,json,// Jackson
+                    30,
+                    TimeUnit.MINUTES
+            );
+        } catch (JsonProcessingException e) {
+            log.error("用户数据序列化失败，写入Redis缓存异常, userId={}", userId, e);
+        }
         return dbUser;
     }
 
@@ -127,7 +133,7 @@ public class UserService {
         // ========== 1.直接查，不需要遍历，不要keys==========
         String userIdStr = stringRedisTemplate.opsForValue().get("refresh_token:" + refreshToken);
         if (userIdStr == null) {
-            throw new RuntimeException("刷新令牌已过期或不存在");
+            throw new BusinessException("刷新令牌已过期或不存在");
         }
 
         Integer userId = Integer.valueOf(userIdStr);
@@ -138,7 +144,7 @@ public class UserService {
 
         // ========== 3. 查用户信息 ==========
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("用户不存在"));
+                .orElseThrow(() -> new BusinessException("用户不存在"));
 
         // ========== 4. 生成新的 Access Token ==========
         String newAccessToken = jwtUtil.generateToken(

@@ -27,6 +27,7 @@ public class LoginInterceptor implements HandlerInterceptor {
 
     private final StringRedisTemplate stringRedisTemplate;
 
+    //预处理
     @Override
     public boolean preHandle(HttpServletRequest request,
              HttpServletResponse response,Object handle) throws Exception{
@@ -34,48 +35,86 @@ public class LoginInterceptor implements HandlerInterceptor {
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             return true;
         }
+
+        // 用 getServletPath() 可以去掉上下文路径（比如 /demo2），直接用相对路径判断
+        String path = request.getServletPath();
+        String method = request.getMethod();
+        //定义游客规则：必须是 GET 请求，并且路径以 /novels 开头
+        boolean isGuestEndpoint = "GET".equalsIgnoreCase(method) && path.startsWith("/novels");
         String token = request.getHeader("Authorization");
-        //判断token存在
-        if (token == null || token.isEmpty()){
-            writeUnauthorized(response);
-            return false;
-        }
+
         //去掉Bearer
-        if (token.startsWith("Bearer ")){
+        if (token != null && token.startsWith("Bearer ")){
             token = token.substring(7);
         }
-        try {
-            jwtUtil.parseToken(token);
-        }catch (Exception e){
-            writeUnauthorized(response);
-            return false;
-        }
-        //查黑名单
-        String blacklistKey = "blacklist:token:" + token;
-        Boolean isBlacklisted = stringRedisTemplate.hasKey(blacklistKey);
-        if (Boolean.TRUE.equals(isBlacklisted)) {
-            writeUnauthorized(response);  // 返回 401
-            return false;
-        }
-        Claims claims = jwtUtil.parseToken(token);
-        // 设置 ThreadLocal
-        UserContextDTO dto = new UserContextDTO();
-        dto.setUsername(jwtUtil.getUsernameFromToken(token));
-        dto.setUserId(jwtUtil.getUserIdFromToken(token));
-        dto.setRole(claims.get("role",String.class));
-        UserContext.setUser(dto);
 
-        //
-        if (handle instanceof HandlerMethod){
-            HandlerMethod handlerMethod = (HandlerMethod) handle;
-            if (handlerMethod.hasMethodAnnotation(RequireAdmin.class)){
-                String role = UserContext.getUser().getRole();
-                if (!"ADMIN".equals(role)) {
-                    writeForbidden(response, "权限不足，需要管理员身份");
-                    return false;
+
+        //是游客的处理
+        if (isGuestEndpoint){
+            if (token != null && !token.isEmpty()){
+                try {
+                    Claims claims = jwtUtil.parseToken(token);
+                    // 检查黑名单（如果在黑名单里，就不设置用户上下文，直接当游客）
+                    String blacklistKey = "blacklist:token:" + token;
+                    Boolean isBlacklisted = stringRedisTemplate.hasKey(blacklistKey);
+                    if (Boolean.FALSE.equals(isBlacklisted)) {
+                        UserContextDTO dto = new UserContextDTO();
+                        dto.setUsername(jwtUtil.getUsernameFromToken(token));
+                        dto.setUserId(jwtUtil.getUserIdFromToken(token));
+                        dto.setRole(claims.get("role", String.class));
+                        UserContext.setUser(dto);
+                    }
+                } catch (Exception e) {
+                    // Token 无效，什么也不做（不打印错误，保持日志干净）
                 }
             }
         }
+
+        //不是游客的处理
+        if (!isGuestEndpoint){
+
+            //判断token存在
+            if (token == null || token.isEmpty()){
+                writeUnauthorized(response);
+                return false;
+            }
+            //解析token
+            Claims claims;
+            try {
+                claims = jwtUtil.parseToken(token);
+            }catch (Exception e){
+                writeUnauthorized(response);
+                return false;
+            }
+
+            //查黑名单
+            String blacklistKey = "blacklist:token:" + token;
+            Boolean isBlacklisted = stringRedisTemplate.hasKey(blacklistKey);
+            if (Boolean.TRUE.equals(isBlacklisted)) {
+                writeUnauthorized(response);  // 返回 401
+                return false;
+            }
+
+            // 设置 ThreadLocal
+            UserContextDTO dto = new UserContextDTO();
+            dto.setUsername(jwtUtil.getUsernameFromToken(token));
+            dto.setUserId(jwtUtil.getUserIdFromToken(token));
+            dto.setRole(claims.get("role",String.class));
+            UserContext.setUser(dto);
+
+            //判断身份
+            if (handle instanceof HandlerMethod){
+                HandlerMethod handlerMethod = (HandlerMethod) handle;
+                if (handlerMethod.hasMethodAnnotation(RequireAdmin.class)){
+                    String role = UserContext.getUser().getRole();
+                    if (!"ADMIN".equals(role)) {
+                        writeForbidden(response, "权限不足，需要管理员身份");
+                        return false;
+                    }
+                }
+            }
+        }
+
         // 放行
         return true;
     }

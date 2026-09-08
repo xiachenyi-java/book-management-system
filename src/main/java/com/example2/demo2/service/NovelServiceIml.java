@@ -1,6 +1,7 @@
 package com.example2.demo2.service;
 
 import com.example2.demo2.common.annotation.RequireAdmin;
+import com.example2.demo2.common.exception.BusinessException;
 import com.example2.demo2.dto.ChapterDTO;
 import com.example2.demo2.dto.NovelDTO;
 import com.example2.demo2.entity.Chapter;
@@ -8,7 +9,7 @@ import com.example2.demo2.entity.Novel;
 import com.example2.demo2.repository.ChapterRepository;
 import com.example2.demo2.repository.NovelRepository;
 import com.example2.demo2.vo.NovelDetailVO;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -28,7 +29,7 @@ import java.util.List;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class NovelService {
+public class NovelServiceIml implements INovelService{
 
     private final NovelRepository novelRepository;
 
@@ -41,18 +42,18 @@ public class NovelService {
             novel.setTitle(dto.getTitle());
             novel.setSummary(dto.getSummary());
             novel.setCategory(dto.getCategory());
-            novel.setCoverUr1(dto.getCoverUrl());
+            novel.setCoverUrl(dto.getCoverUrl());
             novel.setStatus("ONGOING");   // 默认连载中
             novel.setTotalWords(0);
             return novelRepository.save(novel);
         }
 
         // ========== 2. 发布章节（核心） ==========
-        @Transactional
+        @Transactional(rollbackFor = Exception.class)
         public Chapter addChapter(Integer novelId, ChapterDTO dto) {
             // 2.1 查小说存在
             Novel novel = novelRepository.findById(novelId)
-                    .orElseThrow(() -> new RuntimeException("小说不存在"));
+                    .orElseThrow(() -> new BusinessException("小说不存在"));
 
             // 2.2 算这是第几章
             List<Chapter> list = chapterRepository.findByNovelIdOrderByChapterNumberAsc(novelId);
@@ -80,13 +81,13 @@ public class NovelService {
         }
 
         // ========== 3. 修改章节 ==========
-        @Transactional
+        @Transactional(rollbackFor = Exception.class)
         public Chapter updateChapter(Integer novelId, Integer chapterId, ChapterDTO dto) {
             Chapter chapter = chapterRepository.findById(chapterId)
-                    .orElseThrow(() -> new RuntimeException("章节不存在"));
+                    .orElseThrow(() -> new BusinessException("章节不存在"));
 
             if (!chapter.getNovelId().equals(novelId)) {
-                throw new RuntimeException("该章节不属于此小说");
+                throw new BusinessException("该章节不属于此小说");
             }
 
             // 重新算字数差
@@ -109,13 +110,13 @@ public class NovelService {
         }
 
         // ========== 4. 删除章节 ==========
-        @Transactional
+        @Transactional(rollbackFor = Exception.class)
         public void deleteChapter(Integer novelId, Integer chapterId) {
             Chapter chapter = chapterRepository.findById(chapterId)
-                    .orElseThrow(() -> new RuntimeException("章节不存在"));
+                    .orElseThrow(() -> new BusinessException("章节不存在"));
 
             if (!chapter.getNovelId().equals(novelId)) {
-                throw new RuntimeException("该章节不属于此小说");
+                throw new BusinessException("该章节不属于此小说");
             }
 
             // 扣减字数
@@ -133,10 +134,11 @@ public class NovelService {
             chapterRepository.saveAll(chapters);
         }
 
-        @Transactional
+        //========== 删除小说 ==========
+        @Transactional(rollbackFor = Exception.class)
         public void deleteNovel(Integer id) {
             Novel novel = novelRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("小说不存在"));
+                    .orElseThrow(() -> new BusinessException("小说不存在"));
 
             // 先删该小说的所有章节（避免外键或脏数据）
             chapterRepository.deleteByNovelId(id);
@@ -155,10 +157,12 @@ public class NovelService {
         return novelRepository.findAll(pageable);
     }
 
+
     // 2. 小说详情 + 章节目录
+    @Transactional(readOnly = true)
     public NovelDetailVO findDetail(Integer novelId) {
         Novel novel = novelRepository.findById(novelId)
-                .orElseThrow(() -> new RuntimeException("小说不存在"));
+                .orElseThrow(() -> new BusinessException("小说不存在"));
 
         // 查出该小说的所有章节
         List<Chapter> chapters = chapterRepository.findByNovelIdOrderByChapterNumberAsc(novelId);
@@ -168,7 +172,7 @@ public class NovelService {
         vo.setId(novel.getId());
         vo.setTitle(novel.getTitle());
         vo.setSummary(novel.getSummary());
-        vo.setCoverUrl(novel.getCoverUr1());
+        vo.setCoverUrl(novel.getCoverUrl());
         vo.setCategory(novel.getCategory());
         vo.setStatus(novel.getStatus());
         vo.setTotalWords(novel.getTotalWords());
@@ -190,12 +194,13 @@ public class NovelService {
     }
 
     // 3. 阅读某一章（返回完整正文）
+    @Transactional(readOnly = true)
     public Chapter readChapter(Integer novelId, Integer chapterId) {
         Chapter chapter = chapterRepository.findById(chapterId)
-                .orElseThrow(() -> new RuntimeException("章节不存在"));
+                .orElseThrow(() -> new BusinessException("章节不存在"));
 
         if (!chapter.getNovelId().equals(novelId)) {
-            throw new RuntimeException("该章节不属于此小说");
+            throw new BusinessException("该章节不属于此小说");
         }
         return chapter;
     }

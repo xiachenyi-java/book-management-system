@@ -1,5 +1,6 @@
 package com.example2.demo2.common;
 
+import com.example2.demo2.common.exception.BusinessException;
 import com.example2.demo2.common.exception.RateLimitException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -40,7 +41,13 @@ public class GlobalExceptionHandler {
         return Result.error(e.getStatus(), e.getMessage());
     }
 
-
+    //用户异常
+    @ExceptionHandler(BusinessException.class)
+    public Result<Void> handleBusiness(BusinessException e){
+        log.warn("用户问题: {}",e.getMessage());
+        return Result.error(e.getMessage());
+    }
+    //上传文件异常
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public Result<Void> handleFileSizeException(MethodArgumentNotValidException e){
         log.warn("传输文件过大: {}",e.getMessage());
