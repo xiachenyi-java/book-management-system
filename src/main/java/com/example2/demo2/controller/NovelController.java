@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
@@ -103,13 +104,22 @@ public class NovelController {
         return Result.success(iNovelService.readChapter(novelId, chapterId));
     }
 
-    @Operation(summary = "热门小说排行榜")
+    @Operation(summary = "热门小说排行榜（支持总榜/日榜切换）")
     @GetMapping("/ranking")
-    public  Result<List<NovelRankVO>> ranking(@RequestParam(defaultValue = "10") int top){
+    public  Result<List<NovelRankVO>> ranking(@RequestParam(defaultValue = "10") int top,
+                                              @RequestParam(defaultValue = "total") String type){
         // 防止有人恶意传 10000，做一下限制
         if (top > 100) {
             top = 100;
         }
-        return Result.success(iNovelService.findRanking(top));
+
+        // 判断：如果 type 是 "daily"，查日榜；否则查总榜
+        if ("daily".equalsIgnoreCase(type)) {
+            // 调用日榜方法
+            return Result.success(iNovelService.findDailyRanking(top));
+        } else {
+            // 调用总榜方法（默认）
+            return Result.success(iNovelService.findRanking(top));
+        }
     }
 }

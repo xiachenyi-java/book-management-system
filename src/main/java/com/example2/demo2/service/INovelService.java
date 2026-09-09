@@ -35,6 +35,9 @@ public interface INovelService {
     // 3. 阅读某一章（返回完整正文）
      Chapter readChapter(Integer novelId, Integer chapterId);
 
-     //返回排行榜
+     //返回总排行榜
     List<NovelRankVO> findRanking(int top);
+
+    //返回日排行榜
+    List<NovelRankVO> findDailyRanking(int top);
 }
